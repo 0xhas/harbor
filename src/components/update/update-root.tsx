@@ -8,6 +8,7 @@ import {
   updateAvailable,
   useUpdate,
 } from "@/lib/updater/use-update";
+import { isLinuxDesktop } from "@/lib/platform";
 import { UpdateCard } from "./update-card";
 
 const AUTO_DISMISS_MS = 12_000;
@@ -33,6 +34,7 @@ export function UpdateRoot() {
   const [autoHidden, setAutoHidden] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isLinuxDesktop()) return;
     startUpdateWatcher();
   }, []);
 
@@ -52,6 +54,8 @@ export function UpdateRoot() {
     const id = window.setTimeout(() => setAutoHidden(u.version), AUTO_DISMISS_MS);
     return () => window.clearTimeout(id);
   }, [pillVisible, u.status, u.version]);
+
+  if (isLinuxDesktop()) return null;
 
   if (u.panelOpen) return createPortal(<UpdateCard />, document.body);
   if (!pillVisible) return null;

@@ -25,6 +25,7 @@ import {
 } from "@/lib/updater/use-update";
 import { BetaTag } from "@/components/beta-tag";
 import { IS_BETA_BUILD } from "@/lib/build-info";
+import { isLinuxDesktop } from "@/lib/platform";
 import { BackupRow } from "./backup-row";
 import { SettingsRecoverRow } from "./settings-recover-row";
 import { BuildFeedback } from "./build-feedback";
@@ -43,11 +44,12 @@ const SOURCE_URL = "https://github.com/harborstremio/harbor";
 
 export function AdvancedPanel() {
   const t = useT();
+  const supportsInAppUpdates = isTauri && !isLinuxDesktop();
   return (
     <>
       {!isTauri && <WebBuildBanner />}
 
-      {isTauri && (
+      {supportsInAppUpdates && (
         <Section
           title={t("Updates")}
           subtitle={t("Harbor checks harbor.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.")}
@@ -799,4 +801,3 @@ function AnimeRepairRow() {
     />
   );
 }
-

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LogIn } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
 import { AuthModal } from "@/components/auth-modal";
@@ -18,6 +18,12 @@ type Props = {
 export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
   const t = useT();
   const [showAuth, setShowAuth] = useState(false);
+  const cwScrollKey = useMemo(() => {
+    const first = items[0];
+    return first
+      ? `home:cw:${first._id}:${first.state?.lastWatched ?? ""}`
+      : "home:cw";
+  }, [items]);
 
   const signInButton = signedIn ? null : (
     <button
@@ -36,10 +42,11 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
     return (
       <>
         <Row
+          key={cwScrollKey}
           title={t("Continue Watching")}
           min={260}
           shape="landscape"
-          scrollKey="home:cw"
+          scrollKey={cwScrollKey}
           headerRight={signInButton}
         >
           {items.map((item) => (

@@ -612,6 +612,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     simklStatusMap,
     animeDetectVer,
     settings.episodeHiding,
+    settings.animeCwEnd,
   );
 
   useEffect(() => {

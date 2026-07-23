@@ -376,6 +376,7 @@ export type Settings = {
   librarySort: "recent" | "title" | "year";
   preferCustomMetaAddon: boolean;
   animeOnlyInAnimeRoom: boolean;
+  animeCwEnd: "hide" | "timer";
   cwAdvanceNext: boolean;
   useNativeTitleBar: boolean;
   hybridTitleBar: boolean;

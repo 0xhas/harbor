@@ -456,6 +456,8 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     anilistWatchedMap,
     simklStatusMap,
     animeDetectVer,
+    settings.episodeHiding,
+    settings.animeCwEnd,
   );
 
   useEffect(() => {

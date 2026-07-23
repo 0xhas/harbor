@@ -157,6 +157,22 @@ export function LibraryPanel({
           onChange={(v) => update({ animeOnlyInAnimeRoom: v })}
           preview={<HomeRowPreview kind="anime-room" />}
         />
+        <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 py-3 pl-[30px] pr-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[14px] font-medium text-ink">{t("When the latest episode ends")}</span>
+            <span className="text-[12.5px] leading-relaxed text-ink-subtle">
+              {t("Hide until the next episode airs, or keep showing a countdown to when it drops.")}
+            </span>
+          </div>
+          <Segmented
+            value={settings.animeCwEnd}
+            options={[
+              { value: "hide", label: t("Hide") },
+              { value: "timer", label: t("Timer") },
+            ]}
+            onChange={(v) => update({ animeCwEnd: v as "hide" | "timer" })}
+          />
+        </div>
         <ToggleRow
           label={t("Advance Continue Watching to the next episode")}
           sub={t("When you finish an episode, the Home Continue Watching card moves on to the next episode instead of sitting at 0 minutes left.")}

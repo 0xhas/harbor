@@ -18,14 +18,13 @@ const EMPTY_SIMKL_STATUS: Map<string, WatchlistStatus> = new Map();
 
 function isFinishedSeries(i: LibraryItem): boolean {
   if (i.type !== "series" || !i.state) return false;
-  if ((i.state.flaggedWatched ?? 0) <= 0) return false;
   const dur = i.state.duration ?? 0;
   const off = i.state.timeOffset ?? 0;
-  return dur <= 0 || off / dur >= FINISHED_RATIO;
+  if ((i.state.flaggedWatched ?? 0) > 0) return dur <= 0 || off / dur >= FINISHED_RATIO;
+  return dur > 0 && off / dur >= FINISHED_RATIO;
 }
 
 function currentEpisode(i: LibraryItem): { season: number; episode: number } | null {
-  if (ANIME_ID.test(i._id)) return null;
   const season = i.state?.season;
   const episode = i.state?.episode;
   if (season && episode) return { season, episode };
@@ -113,6 +112,7 @@ export function useCwAdvance(
   simklStatus: Map<string, WatchlistStatus> = EMPTY_SIMKL_STATUS,
   animeVersion = 0,
   episodeHiding = false,
+  animeCwEnd: "hide" | "timer" = "hide",
 ): LibraryItem[] {
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
   const [extra, setExtra] = useState<LibraryItem[]>([]);
@@ -174,6 +174,12 @@ export function useCwAdvance(
             }
             effCur = { season: abs.season, episode: abs.episode };
           }
+          if (!list.some((e) => e.season === effCur.season && e.episode === effCur.episode)) {
+            const mapped = list.find(
+              (e) => e.imdbSeason === effCur.season && e.imdbEpisode === effCur.episode,
+            );
+            if (mapped) effCur = { season: mapped.season, episode: mapped.episode };
+          }
         }
         const watchedCur = watchedPredicate(
           i,
@@ -213,7 +219,17 @@ export function useCwAdvance(
             midEpisode &&
             finaleEp != null &&
             effCur.episode < finaleEp.episode;
-          if (!freshMidResume && !midEpisode) remove.add(i._id);
+          if (!freshMidResume && !midEpisode) {
+            if (animeCwEnd === "timer" && nextEp && nextEp.airDate) {
+              next.set(i._id, {
+                ...i,
+                waitingForAir: true as const,
+                nextAirDate: nextEp.airDate,
+              } as LibraryItem);
+            } else {
+              remove.add(i._id);
+            }
+          }
         }
       }
       const lib = library ?? items;

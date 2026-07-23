@@ -350,6 +350,7 @@ export const DEFAULT: Settings = {
   librarySort: "recent",
   preferCustomMetaAddon: false,
   animeOnlyInAnimeRoom: true,
+  animeCwEnd: "hide",
   cwAdvanceNext: true,
   useNativeTitleBar: false,
   hybridTitleBar: false,

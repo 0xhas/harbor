@@ -49,6 +49,25 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
   const progress = dur > 0 ? Math.min(1, off / dur) : 0;
   const remaining = dur > 0 && !isExternal ? formatRemaining(t, dur - off) : "";
   const upNext = item.upNext === true;
+  const waitingForAir = (item as Record<string, unknown>).waitingForAir === true;
+  const nextAirDate = waitingForAir ? ((item as Record<string, unknown>).nextAirDate as string | undefined) : undefined;
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!waitingForAir || !nextAirDate) return;
+    const id = window.setInterval(() => setNow(Date.now()), 60000);
+    return () => window.clearInterval(id);
+  }, [waitingForAir, nextAirDate]);
+  const countdown = useMemo(() => {
+    if (!nextAirDate) return "";
+    const diff = Date.parse(nextAirDate) - now;
+    if (diff <= 0) return t("Airing now");
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    if (days > 0) return t("Next in {days}d {hours}h", { days: String(days), hours: String(hours) });
+    if (hours > 0) return t("Next in {hours}h {minutes}m", { hours: String(hours), minutes: String(minutes) });
+    return t("Next in {minutes}m", { minutes: String(Math.max(1, minutes)) });
+  }, [nextAirDate, now, t]);
   const kitsuThreeSeg =
     /^(kitsu|mal|anilist|anidb):/.test(item._id) &&
     (item.state?.video_id ?? "").split(":").length === 3;
@@ -390,7 +409,9 @@ export const ContinueCard = memo(function ContinueCard({ item, watched = false, 
               <Play size={11} fill="currentColor" className="shrink-0 text-ink" />
             )}
             {sub && <span className="shrink-0 font-medium text-ink">{sub}</span>}
-            {upNext ? (
+            {waitingForAir && countdown ? (
+              <span className="shrink-0 font-medium text-amber">{countdown}</span>
+            ) : upNext ? (
               <>
                 {sub && <span className="shrink-0 text-ink-subtle">·</span>}
                 <span className="shrink-0 font-medium text-accent">{t("Up Next")}</span>

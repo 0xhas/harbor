@@ -236,6 +236,12 @@ export function useCwAdvance(
             },
             upNext: true,
           });
+        } else if (animeCwEnd === "timer" && nextEp && nextEp.airDate) {
+          next.set(i._id, {
+            ...i,
+            waitingForAir: true as const,
+            nextAirDate: nextEp.airDate,
+          } as LibraryItem);
         } else if (shouldDropFinished(list, fetchOk, i.state, animeMode, effCur, nextEp, hideCaughtUp)) {
           remove.add(i._id);
         }

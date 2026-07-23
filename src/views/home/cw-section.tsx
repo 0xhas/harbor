@@ -18,11 +18,9 @@ type Props = {
 export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
   const t = useT();
   const [showAuth, setShowAuth] = useState(false);
-  const cwScrollKey = useMemo(() => {
+  const rowKey = useMemo(() => {
     const first = items[0];
-    return first
-      ? `home:cw:${first._id}:${first.state?.lastWatched ?? ""}`
-      : "home:cw";
+    return first ? `home:cw:${first._id}` : "home:cw";
   }, [items]);
 
   const signInButton = signedIn ? null : (
@@ -42,11 +40,11 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
     return (
       <>
         <Row
-          key={cwScrollKey}
+          key={rowKey}
           title={t("Continue Watching")}
           min={260}
           shape="landscape"
-          scrollKey={cwScrollKey}
+          scrollKey="home:cw"
           headerRight={signInButton}
         >
           {items.map((item) => (

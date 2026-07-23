@@ -5,6 +5,7 @@ import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
 import { saveLocalCw } from "@/lib/local-cw";
+import { isLocalUrl } from "@/lib/player/local-url";
 import { isManuallyWatched, recordManualWatchedMeta, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { clearResume, saveResumeMs } from "@/lib/resume";
@@ -14,7 +15,7 @@ import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
 import { useSettings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
-import { ANIME_CLOUD_ID } from "@/lib/stremio";
+import { ANIME_CLOUD_ID, CLOUD_OK } from "@/lib/stremio";
 import { syncSeriesWatchedToStremio } from "@/lib/stremio-episode-watched";
 
 const TICK_MS = 4000;
@@ -107,7 +108,14 @@ export function useResumeAutosave(params: {
     }
     if (s.meta.type === "movie" && finished) setMovieWatchedLocal(id, true);
     const animeLocal = ANIME_CLOUD_ID.test(id);
-    if (s.meta.type === "series" || s.meta.type === "movie" || animeLocal) {
+    const ttAnimeUnmapped =
+      id.startsWith("tt") &&
+      !!s.episode?.kitsuStreamId &&
+      (s.episode.imdbSeason == null || s.episode.imdbEpisode == null);
+    if (
+      (s.meta.type === "series" || s.meta.type === "movie" || animeLocal) &&
+      (!CLOUD_OK.test(id) || isLocalUrl(s.url) || animeLocal || ttAnimeUnmapped)
+    ) {
       saveLocalCw({
         id,
         type: s.meta.type === "movie" ? "movie" : "series",

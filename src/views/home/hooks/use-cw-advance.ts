@@ -73,7 +73,8 @@ function watchedPredicate(
     );
     if (prog.watched) return true;
     if (season === cur.season && episode === cur.episode) return finished;
-    return simklCompleted;
+    if (simklCompleted && (season < cur.season || (season === cur.season && episode < cur.episode))) return true;
+    return false;
   };
 }
 
@@ -193,7 +194,11 @@ export function useCwAdvance(
         const nextEp = nextUnwatchedAfter(
           list,
           effCur,
-          watchedPredicate(i, effCur, traktWatched, simklWatched, anilistWatched, simklStatus),
+          (s: number, e: number): boolean => {
+            if (s === effCur.season && e === effCur.episode) return true;
+            const prog = getEpisodeProgress(i._id, s, e, null, null, new Set());
+            return prog.watched;
+          },
           episodeHiding ? (s, e) => isEpisodeHidden(i._id, s, e) : undefined,
         );
         if (nextEp && nextEpAired(list, nextEp, isAnime)) {

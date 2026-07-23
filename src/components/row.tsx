@@ -210,7 +210,17 @@ export function Row({
       const target = n != null && n > 0 && max > 0 ? Math.min(n, max) : 0;
       if (readPos(trackEl) !== target) writePos(trackEl, target);
       restoredRef.current = true;
-      return;
+    }
+    if (childCount > 0) {
+      const first = trackEl.firstElementChild as HTMLElement | null;
+      if (first) {
+        const tr = trackEl.getBoundingClientRect();
+        const fr = first.getBoundingClientRect();
+        if (fr.right <= tr.left + 4) {
+          writePos(trackEl, 0);
+          return;
+        }
+      }
     }
     if (!userInteractedRef.current && readPos(trackEl) !== 0) {
       writePos(trackEl, 0);

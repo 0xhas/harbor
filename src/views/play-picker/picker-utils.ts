@@ -418,6 +418,23 @@ export function isEngineWarmingError(msg: string | null): boolean {
   return msg === ENGINE_WARMING_MESSAGE;
 }
 
+export function debridBannerTitle(e: { name: string; code: string }): string {
+  switch (e.code) {
+    case "traffic-limit":
+      return `${e.name} is over its traffic or fair-use limit right now.`;
+    case "rate-limited":
+      return `${e.name} is rate-limiting Harbor right now.`;
+    case "unauthorized":
+      return `${e.name} rejected your API key.`;
+    case "not-premium":
+      return `Your ${e.name} subscription looks expired.`;
+    case "upstream-unavailable":
+      return `${e.name} is temporarily unavailable (server error).`;
+    default:
+      return `${e.name} returned an error (${e.code}).`;
+  }
+}
+
 export function humanError(code: string): string {
   switch (code) {
     case "not-cached":
@@ -464,6 +481,10 @@ export function humanError(code: string): string {
       return "Your debrid subscription has expired.";
     case "rate-limited":
       return "The debrid service is rate-limiting us. Try again in a moment.";
+    case "traffic-limit":
+      return "Real-Debrid is refusing this download right now, which usually means its traffic or fair-use limit has been hit. Try again later, pick a different source, or use another debrid.";
+    case "upstream-unavailable":
+      return "The debrid service returned a server error and is temporarily unavailable. Try again in a moment or pick another source.";
     case "aborted":
       return "Cancelled.";
     default:

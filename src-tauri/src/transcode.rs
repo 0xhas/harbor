@@ -219,6 +219,7 @@ pub async fn probe_codecs(url: &str, headers: &HashMap<String, String>) -> Probe
         .arg("stream=codec_name,codec_type")
         .arg("-of")
         .arg("default=noprint_wrappers=1:nokey=0")
+        .arg("-i")
         .arg(url);
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())

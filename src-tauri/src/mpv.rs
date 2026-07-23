@@ -641,8 +641,9 @@ pub async fn mpv_start(
         let _ = mpv.set_property("network-timeout", "60");
         let _ = mpv.set_property(
             "stream-lavf-o",
-            "reconnect=1,reconnect_streamed=1,reconnect_delay_max=5,reconnect_on_network_error=1",
+            "reconnect=1,reconnect_delay_max=5,reconnect_on_network_error=1",
         );
+        let _ = mpv.set_property("demuxer-lavf-o", "http_seekable=0,http_persistent=0");
         let _ = mpv.set_property("stream-buffer-size", "16MiB");
     } else {
         let _ = mpv.set_property("cache", "yes");

@@ -90,11 +90,13 @@ export function isCwMember(i: LibraryItem): boolean {
     const local = resumeForItem(i)?.ms ?? 0;
     return local > 0;
   }
+  const duration = i.state.duration ?? 0;
+  const finishedByRatio = duration > 0 && i.state.timeOffset / duration >= CW_FINISHED_RATIO;
+  if (i.type === "movie" && ((i.state.flaggedWatched ?? 0) > 0 || finishedByRatio)) return false;
   if (i.state.timeOffset > 0) return true;
   if ((i.state.flaggedWatched ?? 0) > 0) return false;
   const local = resumeForItem(i)?.ms ?? 0;
   if (local <= 0) return false;
-  const duration = i.state.duration ?? 0;
   if (duration > 0 && local / duration >= CW_FINISHED_RATIO) return false;
   return true;
 }

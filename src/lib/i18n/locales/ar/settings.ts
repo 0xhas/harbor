@@ -817,7 +817,7 @@ const settings: Record<string, string> = {
   "Reveal the show or movie artwork.": "إظهار صورة العرض أو الفيلم.",
   "Legal": "إشعار قانوني",
   "Made with": "صُنع بـ",
-  "by the Harbor team": "بواسطة فريق Harbor",
+  "by Harbor contributors": "بواسطة مساهمي Harbor",
   "Know more": "اعرف المزيد",
   "A special thank you to the team at Stremio-Addons. Please consider supporting them.": "شكر خاص لفريق Stremio-Addons. يرجى التفكير في دعمهم.",
   "Debrid services": "خدمات Debrid",

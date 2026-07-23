@@ -317,7 +317,7 @@ export function AddonsView() {
                   <div key={tabId} className="group relative">
                     {btn}
                     <div className="pointer-events-none invisible absolute start-0 top-full z-50 mt-2 w-80 rounded-xl border border-edge-soft bg-elevated/95 px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted opacity-0 shadow-xl backdrop-blur-md transition duration-150 group-hover:visible group-hover:opacity-100">
-                      {t("Curated for popularity and reliability. No paid placements. Install anything else by URL on the Browse tab.")}
+                      {t("Popular community addons ranked by the public directory's stars. Install anything else by URL on the Browse tab.")}
                     </div>
                   </div>
                 );

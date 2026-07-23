@@ -59,7 +59,7 @@ function ensureFocusStyles() {
   const style = document.createElement("style");
   style.setAttribute("data-tv-focus-styles", "true");
   style.textContent = `
-    [data-tv-focused="true"] {
+    html:not([data-input-modality="pointer"]) [data-tv-focused="true"] {
       outline: none !important;
       box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 5px var(--tv-focus-ring, var(--color-accent)), 0 0 0 7px rgba(0,0,0,0.45) !important;
       transition: box-shadow 120ms ease;
@@ -79,6 +79,38 @@ export function tvFocus(el: HTMLElement) {
 function clearTvFocusRing() {
   lastFocusedEl?.removeAttribute("data-tv-focused");
   lastFocusedEl = null;
+}
+
+type InputModality = "pointer" | "keys";
+let inputModality: InputModality | null = null;
+let lastPointerX: number | null = null;
+let lastPointerY: number | null = null;
+
+function reflectModality() {
+  if (typeof document === "undefined" || !inputModality) return;
+  document.documentElement.setAttribute("data-input-modality", inputModality);
+}
+
+function setKeysModality() {
+  if (inputModality === "keys") return;
+  inputModality = "keys";
+  reflectModality();
+}
+
+function setPointerModality() {
+  if (inputModality === "pointer") return;
+  inputModality = "pointer";
+  reflectModality();
+  clearTvFocusRing();
+  const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (active && !isEditable(active)) active.blur();
+}
+
+function notePointerMove(x: number, y: number) {
+  const moved = lastPointerX !== null && (x !== lastPointerX || y !== lastPointerY);
+  lastPointerX = x;
+  lastPointerY = y;
+  if (moved) setPointerModality();
 }
 
 function focusElement(el: HTMLElement) {
@@ -158,6 +190,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key === "Tab") setKeysModality();
 
       const target = e.target instanceof HTMLElement ? e.target : null;
       const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -196,6 +229,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
       const dir = getDirection(e);
 
       if (dir) {
+        setKeysModality();
         if (!arrowsRef.current) return;
         if (isLocallyManaged(target)) return;
         e.preventDefault();
@@ -308,6 +342,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
     };
 
     const onPointerDown = () => {
+      setPointerModality();
       if (activeSearchEditEl) {
         activeSearchEditEl.removeAttribute("data-search-editing");
         activeSearchEditEl = null;
@@ -318,11 +353,18 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
       }
     };
 
+    const onPointerMove = (e: PointerEvent) => notePointerMove(e.screenX, e.screenY);
+    const onWheel = () => setPointerModality();
+
     window.addEventListener("keydown", onKeyDown, false);
     window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("wheel", onWheel, { capture: true, passive: true });
     return () => {
       window.removeEventListener("keydown", onKeyDown, false);
       window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("pointermove", onPointerMove, true);
+      window.removeEventListener("wheel", onWheel, true);
       if (activeSearchEditEl) {
         activeSearchEditEl.removeAttribute("data-search-editing");
         activeSearchEditEl = null;

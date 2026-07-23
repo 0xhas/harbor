@@ -35,6 +35,7 @@ import { CachedFilterPill, LanguageFilterPill } from "./play-picker/filter-pills
 import { PickerEmptyLadder } from "./play-picker/picker-empty-ladder";
 import { NoSourcesConfiguredModal } from "./play-picker/no-sources-modal";
 import {
+  debridBannerTitle,
   hasCachedMarker,
   hasUncachedMarker,
   isEngineWarmingError,
@@ -723,6 +724,24 @@ export function PlayPicker({
 
         {!addonsSettled && (!filteredPicker || filteredPicker.all.length === 0) && (
           <CinematicLoader meta={metaForDisplay} />
+        )}
+
+        {result?.debridErrors && result.debridErrors.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent-soft px-5 py-3.5 text-[13px] ring-1 ring-edge-soft">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="font-semibold text-accent">{debridBannerTitle(result.debridErrors[0])}</p>
+              <p className="text-[12.5px] leading-snug text-ink-muted">
+                Some of your cached sources may be missing from this list. This is a debrid-side issue, not a problem with your subscription.
+              </p>
+            </div>
+            <button
+              onClick={refresh}
+              disabled={loading}
+              className="shrink-0 rounded-full bg-elevated px-4 py-2 text-[12.5px] font-semibold text-ink ring-1 ring-edge-soft transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:scale-100"
+            >
+              Recheck
+            </button>
+          </div>
         )}
 
         <PickerEmptyLadder

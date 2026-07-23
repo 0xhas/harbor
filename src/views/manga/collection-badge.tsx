@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
-import acclaimedArt from "@/assets/manga-badges/acclaimed.png";
-import expoArt from "@/assets/manga-badges/anime-expo.png";
-import eisnerArt from "@/assets/manga-badges/eisner.png";
-import harveyArt from "@/assets/manga-badges/harvey.png";
-import seiunArt from "@/assets/manga-badges/seiun.png";
-import popularArt from "@/assets/manga-badges/popular.png";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
 import { collectionsForTitle } from "@/lib/manga/collections";
 import { hasAnyMangaSource } from "@/lib/manga/sources";
 import { useView } from "@/lib/view";
+
+function collectionBadge(label: string, color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><circle cx="48" cy="48" r="46" fill="${color}"/><path d="m48 17 7 17 18 1-14 12 5 18-16-10-16 10 5-18-14-12 18-1z" fill="white"/><text x="48" y="84" fill="white" font-family="system-ui,sans-serif" font-size="11" font-weight="700" text-anchor="middle">${label}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+// Collection artwork is intentionally excluded from the public repository.
+const popularArt = collectionBadge("TOP", "#d97706");
+const acclaimedArt = collectionBadge("BEST", "#7c3aed");
+const expoArt = collectionBadge("EXPO", "#0f766e");
+const eisnerArt = collectionBadge("EISNER", "#1d4ed8");
+const harveyArt = collectionBadge("HARVEY", "#be123c");
+const seiunArt = collectionBadge("SEIUN", "#0369a1");
 
 const BADGE_ART: Record<string, string> = {
   popular: popularArt,

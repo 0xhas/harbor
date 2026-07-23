@@ -1417,6 +1417,9 @@ export const BETA_THEMES: ThemePreset[] = [
     html: elegantFinHtml,
     js: elegantFinJs,
   },
+];
+
+const PARKED_THEMES: ThemePreset[] = [
   {
     id: "feishin" as ThemePresetId,
     name: "Feishin",
@@ -1662,6 +1665,8 @@ export function getThemeById(id: string): ThemePreset | null {
   if (featured) return featured;
   const beta = BETA_THEMES.find((t) => t.id === id);
   if (beta) return beta;
+  const parked = PARKED_THEMES.find((t) => t.id === id);
+  if (parked) return parked;
   const template = TEMPLATE_THEMES.find((t) => t.id === id);
   if (template) return template;
   if (id.startsWith("user:")) {

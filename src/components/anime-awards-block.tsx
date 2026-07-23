@@ -41,7 +41,7 @@ function SourceGroup({ source, wins }: { source: AwardSourceId; wins: AwardWin[]
   const customLogo = resolveAwardIcon(`${source}_logo`) ?? resolveAwardIcon(source);
   const iconSrc = customLogo ?? meta.icon;
   const logoClass = `h-auto max-h-12 w-auto max-w-[180px] shrink-0 ${
-    source === "animation_kobe" ? (customLogo ? "max-h-14" : "brightness-0 invert max-h-14") : ""
+    source === "animation_kobe" ? "max-h-14" : ""
   }`;
   return (
     <section className="grid gap-7 lg:grid-cols-[240px_1fr] lg:gap-14">

@@ -1,6 +1,6 @@
 [package]
 name = "harbor"
-version = "0.9.111"
+version = "0.9.112"
 description = "A Stremio client built for adventure"
 edition = "2021"
 
@@ -43,7 +43,7 @@ regex = "1"
 encoding_rs = "0.8"
 uuid = { version = "1", features = ["v4"] }
 futures-util = "0.3"
-gilrs = "0.11"
+gilrs = { version = "0.11", default-features = false, features = ["xinput"] }
 libmpv2 = "4"
 libmpv2-sys = "4"
 libc = "0.2"

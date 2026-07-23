@@ -8,7 +8,7 @@ export function Signature() {
       <p className="flex items-center gap-1.5 text-center text-[12px] tracking-wide text-ink-subtle">
         Made with
         <HeartGlyph />
-        by the Harbor team
+        by Harbor contributors
       </p>
       <button
         onClick={() => setOpen((v) => !v)}

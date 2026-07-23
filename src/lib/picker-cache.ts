@@ -56,7 +56,7 @@ export function setPickerCache(
   complete = true,
 ): void {
   if (result.picker.all.length === 0) return;
-  const stripped: StoredResult = { picker: result.picker, rejected: result.rejected.slice(0, 60) };
+  const stripped: StoredResult = { picker: result.picker, rejected: result.rejected.slice(0, 60), debridErrors: result.debridErrors };
   lruSet(cache, entryKey(meta, episode), {
     meta,
     episode,

@@ -583,6 +583,7 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
         format!("--screenshot-jpeg-quality={}", SCREENSHOT_QUALITY),
         "--screenshot-tag-colorspace=no".into(),
         "--hr-seek=no".into(),
+        "--".into(),
         url.to_string(),
     ];
 

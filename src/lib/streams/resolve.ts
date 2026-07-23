@@ -142,7 +142,7 @@ export async function resolveStream(
     dwarn(`[resolve] ${d.slug} returned suspicious link (likely error/downloading video), trying next debrid`);
     tried.push({ slug: d.slug, code: "stub-or-error-video" });
   }
-  if (allowP2pFallback) {
+  if (allowP2pFallback && !anyCached) {
     const direct = await tryTorrentEngine(stream, hint);
     if (direct) return { ok: true, data: direct, via: "p2p" };
     if (directTorrentEnabled()) return { ok: false, code: engineFailureCode(), tried };

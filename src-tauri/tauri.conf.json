@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Harbor",
-  "version": "0.9.111",
+  "version": "0.9.112",
   "identifier": "app.harbor",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -53,7 +53,8 @@
     "targets": ["app", "dmg", "deb", "rpm", "appimage", "nsis"],
     "externalBin": ["binaries/yt-dlp", "binaries/ffmpeg", "binaries/ffprobe"],
     "resources": {
-      "fonts/*": "fonts/"
+      "fonts/*": "fonts/",
+      "THIRD-PARTY-NOTICES.txt": "notices/"
     },
     "licenseFile": "installer/eula.txt",
     "icon": [

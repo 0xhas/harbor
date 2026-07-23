@@ -86,6 +86,8 @@ export function useAutoFire(args: {
     if (firstResultAt == null) return;
 
     const top = autoCandidates[0];
+    const topLangOk =
+      preferredLangs.length === 0 || (top != null && streamMatchesLangs(top, preferredLangs));
     const floorEligible =
       top != null && topInstantPlayable(top) && !nameAbsent(top) && episodeQualifies(top);
 
@@ -98,8 +100,8 @@ export function useAutoFire(args: {
       const quorumReached =
         addonQuorum.total > 0 && addonQuorum.settled / addonQuorum.total >= QUORUM_RATIO;
 
-      const instantTopFloor = floorEligible && sinceFirst >= baselineSettleMs;
-      const quorumFloor = quorumReached && sinceFirst >= AUTO_SETTLE_MS;
+      const instantTopFloor = floorEligible && topLangOk && sinceFirst >= baselineSettleMs;
+      const quorumFloor = quorumReached && topLangOk && sinceFirst >= AUTO_SETTLE_MS;
       const capElapsed = pipelineStartedAt != null && sinceStart >= QUORUM_CAP_MS;
 
       if (instantTopFloor || quorumFloor || capElapsed) setAutoSettleReady(true);
@@ -120,7 +122,7 @@ export function useAutoFire(args: {
     };
   }, [
     autoActive, autoSettleReady, pipelineDone, firstResultAt, pipelineStartedAt,
-    autoCandidates, addonQuorum, isCached, p2pAutoConsent, episode, season, setAutoSettleReady,
+    autoCandidates, addonQuorum, isCached, p2pAutoConsent, episode, season, preferredLangs, setAutoSettleReady,
   ]);
 
   useEffect(() => {

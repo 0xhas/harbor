@@ -378,6 +378,7 @@ export type Settings = {
   animeOnlyInAnimeRoom: boolean;
   animeCwEnd: "hide" | "timer";
   cwAdvanceNext: boolean;
+  cwHideCaughtUp: boolean;
   useNativeTitleBar: boolean;
   hybridTitleBar: boolean;
   topbarScrollBlur: boolean;

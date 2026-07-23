@@ -181,6 +181,12 @@ export function LibraryPanel({
           preview={<HomeRowPreview kind="cw-advance" />}
         />
         <ToggleRow
+          label={t("Remove shows once you're caught up")}
+          sub={t("On by default: once you've watched every episode that has aired, the show leaves Continue Watching and returns when a new episode drops. Turn it off to keep caught-up shows on the row.")}
+          value={settings.cwHideCaughtUp}
+          onChange={(v) => update({ cwHideCaughtUp: v })}
+        />
+        <ToggleRow
           label={t("Keep Continue Watching private to each profile")}
           sub={t("Only show Continue Watching for the profile that's active. Each profile sees just its own progress, so what you watch stays hidden from the other profiles that share this Stremio account.")}
           value={settings.cwPerProfile}

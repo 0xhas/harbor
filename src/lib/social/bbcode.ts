@@ -193,6 +193,31 @@ function trimBr(s: string): string {
   return s.replace(/^(?:<br\/>)+/, "").replace(/(?:<br\/>)+$/, "").trim();
 }
 
+const BARE_URL_RE = /https?:\/\/[^\s<>"']+/gi;
+
+function linkifyEscaped(s: string): string {
+  let out = "";
+  let last = 0;
+  BARE_URL_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = BARE_URL_RE.exec(s))) {
+    out += esc(s.slice(last, m.index));
+    let raw = m[0];
+    let trail = "";
+    while (/[.,;:!?)\]}'"]$/.test(raw)) {
+      trail = raw.slice(-1) + trail;
+      raw = raw.slice(0, -1);
+    }
+    const href = linkUrl(raw);
+    out += href
+      ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer nofollow" style="${LINK_STYLE}">${esc(raw)}</a>${esc(trail)}`
+      : esc(m[0]);
+    last = m.index + m[0].length;
+  }
+  out += esc(s.slice(last));
+  return out;
+}
+
 function wrapList(inner: string): string {
   const items = inner
     .split(LI)
@@ -251,14 +276,14 @@ function finalize(f: Frame, addEmbed: () => boolean): { html: string; raw: strin
   return wrap(inner);
 }
 
-function pushText(top: Frame, v: string): void {
+function pushText(top: Frame, v: string, linkify = false): void {
   const norm = v.replace(/\r\n?/g, "\n").replace(/\n{3,}/g, "\n\n");
   const parts = norm.split("\n");
   parts.forEach((p, i) => {
     if (i > 0) top.html.push("<br/>");
     top.raw.push(i > 0 ? "\n" : "");
     if (p) {
-      top.html.push(esc(p));
+      top.html.push(linkify ? linkifyEscaped(p) : esc(p));
       top.raw.push(p);
     }
   });
@@ -277,7 +302,7 @@ export function renderBbcode(input: string): string {
 
   for (const tk of tokenize(src)) {
     if (tk.k === "text") {
-      pushText(top(), tk.v);
+      pushText(top(), tk.v, !stack.some((f) => f.tag === "url" || f.tag === "code"));
     } else if (tk.k === "li") {
       if (inList()) {
         top().html.push(LI);

@@ -72,10 +72,13 @@ export type PipelineInput = {
   presetStreams?: Stream[];
 };
 
+export type DebridError = { slug: string; name: string; code: string };
+
 export type PipelineResult = {
   picker: RankedPicker;
   rejected: Rejection[];
   raw: { addon: Stream[]; library: Stream[] };
+  debridErrors?: DebridError[];
 };
 
 export async function runPipeline(
@@ -86,6 +89,7 @@ export async function runPipeline(
 ): Promise<PipelineResult> {
   let library: Stream[] = [];
   let lastPartialAt = 0;
+  const debridErrors: DebridError[] = [];
 
   const buildPartial = (addonStreams: Stream[]): PipelineResult => {
     const merged = mergeAndDedupe(library, addonStreams);
@@ -95,7 +99,7 @@ export async function runPipeline(
     const scored = keep.map((s) => scoreStream(s, input.score, corpus));
     const picker = rankAndPick(scored, input.score.activeDebrids, PREFER_AAC, input.score.respectAddonOrder === true);
     const fin = finalizeWithRescue(picker, rejected, input.trust ?? {}, input.score);
-    return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library } };
+    return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library }, debridErrors: debridErrors.length > 0 ? debridErrors : undefined };
   };
 
   const emitPartial = (addonStreams: Stream[]) => {
@@ -161,7 +165,14 @@ export async function runPipeline(
 
     for (let i = 0; i < input.debrids.length; i++) {
       const r = libraryResults[i];
-      if (r.status !== "fulfilled" || !r.value.ok) continue;
+      if (r.status === "rejected") {
+        debridErrors.push({ slug: input.debrids[i].slug, name: input.debrids[i].name, code: "network-error" });
+        continue;
+      }
+      if (!r.value.ok) {
+        debridErrors.push({ slug: input.debrids[i].slug, name: input.debrids[i].name, code: r.value.code });
+        continue;
+      }
       const slug = input.debrids[i].slug;
       const libHashes = new Set(r.value.data.map((e) => e.hash.toLowerCase()).filter(Boolean));
       let hits = 0;
@@ -192,7 +203,7 @@ export async function runPipeline(
       dlog(`[pipeline] (core) trust kept ${core.picker.all.length}/${parsed.length} · rejected: ${summary}`);
     }
     const fin = finalizeWithRescue(core.picker, core.rejected, input.trust ?? {}, input.score);
-    return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library } };
+    return { picker: fin.picker, rejected: fin.rejected, raw: { addon: addonStreams, library }, debridErrors: debridErrors.length > 0 ? debridErrors : undefined };
   }
   const { keep, rejected } = applyTrust(parsed, input.trust ?? {});
   if (rejected.length > 0) {

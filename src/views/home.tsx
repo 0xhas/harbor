@@ -567,7 +567,9 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       if (!cancelled) setCwRootVersion((v) => v + 1);
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [localCwItems, simklCw]);
   const resurfaceLibrary = useMemo(() => {
     const pool = [

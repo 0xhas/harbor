@@ -270,9 +270,7 @@ function checkOne(
     opts.expectedTitles.length > 0 &&
     s.parsedTitle
   ) {
-    const ok = opts.expectedTitles.some((t) =>
-      titleMatches(t, s.parsedTitle, s.year, opts.expectedYear ?? null),
-    );
+    const ok = opts.expectedTitles.some((t) => titleTokensPresent(t, s.parsedTitle!));
     if (!ok) return "anime-title-mismatch";
   }
 
@@ -339,11 +337,15 @@ function haystackHasSequelToken(haystack: string, expectedSeq: number): boolean 
   return false;
 }
 
+const NUMBER_NAME_TAIL_RX = /(?:\bno\.?|\bnr\.?|\bnumber|#|n°|№)\s*(?:\d{1,2}|[ivx]+)\s*$/i;
+
 function sequelMarker(title: string): number | null {
   const cleaned = title
     .replace(/\(\d{4}\)/g, "")
     .replace(/\b(part|chapter|vol|volume)\b/gi, "");
-  const m = cleaned.trim().match(/(?:\s|^)(\d{1,2}|[ivx]+)\s*$/i);
+  const trimmed = cleaned.trim();
+  if (NUMBER_NAME_TAIL_RX.test(trimmed)) return null;
+  const m = trimmed.match(/(?:\s|^)(\d{1,2}|[ivx]+)\s*$/i);
   if (!m) return null;
   const tok = m[1].toLowerCase();
   if (/^\d+$/.test(tok)) {

@@ -552,8 +552,7 @@ fn spawn_mpv(
 }
 
 fn ipc_loadfile_msg(url: &str) -> String {
-    let escaped = url.replace('\\', "\\\\").replace('"', "\\\"");
-    format!("{{\"command\":[\"loadfile\",\"{escaped}\",\"replace\"]}}")
+    serde_json::json!({ "command": ["loadfile", url, "replace"] }).to_string()
 }
 
 const IPC_WAKE_REDRAW: &str = "{\"command\":[\"set_property\",\"video-zoom\",0]}";

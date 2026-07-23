@@ -99,6 +99,10 @@ static FAKE_STUDIO_RX: Lazy<Regex> = Lazy::new(|| {
 static SEQUEL_TAIL_RX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)(?:\s|^)(\d{1,2}|[ivx]+)\s*$").unwrap());
 
+static NUMBER_NAME_TAIL_RX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)(?:\bno\.?|\bnr\.?|\bnumber|#|n°|№)\s*(?:\d{1,2}|[ivx]+)\s*$").unwrap()
+});
+
 static YEAR_PAREN_RX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\(\d{4}\)").unwrap());
 
 static PART_WORD_RX: Lazy<Regex> =
@@ -385,14 +389,10 @@ fn check_one(
         && !opts.expected_titles.is_empty()
         && !s.parsed_title.is_empty()
     {
-        let ok = opts.expected_titles.iter().any(|t| {
-            title_matches(
-                t,
-                &s.parsed_title,
-                s.year.map(|y| y as i32),
-                opts.expected_year.map(|y| y as i32),
-            )
-        });
+        let ok = opts
+            .expected_titles
+            .iter()
+            .any(|t| title_tokens_present(t, &s.parsed_title));
         if !ok {
             return Some("anime-title-mismatch".to_string());
         }
@@ -506,6 +506,9 @@ fn sequel_marker(title: &str) -> Option<i32> {
     let no_year = YEAR_PAREN_RX.replace_all(title, "");
     let no_part = PART_WORD_RX.replace_all(&no_year, "");
     let trimmed = no_part.trim();
+    if NUMBER_NAME_TAIL_RX.is_match(trimmed) {
+        return None;
+    }
     let m = SEQUEL_TAIL_RX.captures(trimmed)?;
     let tok = m.get(1)?.as_str().to_lowercase();
     if tok.chars().all(|c| c.is_ascii_digit()) {
@@ -585,6 +588,21 @@ fn title_matches(
     if expected_tokens.len() <= 2 && parsed_tokens.len().saturating_sub(overlap) > 2 {
         return false;
     }
+    expected_ratio >= 0.5 || parsed_ratio >= 0.5 || overlap >= 2
+}
+
+fn title_tokens_present(expected: &str, parsed: &str) -> bool {
+    let expected_tokens = tokenize(expected);
+    let parsed_tokens = tokenize(parsed);
+    if expected_tokens.is_empty() || parsed_tokens.is_empty() {
+        return true;
+    }
+    let expected_set: HashSet<&str> = expected_tokens.iter().map(|s| s.as_str()).collect();
+    let parsed_set: HashSet<&str> = parsed_tokens.iter().map(|s| s.as_str()).collect();
+    let overlap = count_overlap(&expected_tokens, &parsed_set);
+    let reverse_overlap = count_overlap(&parsed_tokens, &expected_set);
+    let expected_ratio = overlap as f64 / expected_tokens.len() as f64;
+    let parsed_ratio = reverse_overlap as f64 / parsed_tokens.len() as f64;
     expected_ratio >= 0.5 || parsed_ratio >= 0.5 || overlap >= 2
 }
 
@@ -1163,5 +1181,49 @@ mod tests {
         let result = apply_trust(vec![s], &opts_strict());
         assert_eq!(result.keep.len(), 1);
         assert!(result.rejected.is_empty());
+    }
+
+    #[test]
+    fn sequel_marker_ignores_number_in_title_name() {
+        assert_eq!(sequel_marker("Kaiju No. 8"), None);
+        assert_eq!(sequel_marker("Kaiju No.8"), None);
+        assert_eq!(sequel_marker("Mob Psycho #2"), None);
+        assert_eq!(sequel_marker("Ranking of Kings Number 3"), None);
+        assert_eq!(sequel_marker("John Wick 4"), Some(4));
+        assert_eq!(sequel_marker("Rocky II"), Some(2));
+    }
+
+    #[test]
+    fn title_matches_numbered_title_across_name_variants() {
+        assert!(title_matches("Kaiju No. 8", "Kaijuu 8 Gou", None, Some(2024)));
+        assert!(title_matches("Kaiju No. 8", "Kaiju No 8", None, Some(2024)));
+    }
+
+    #[test]
+    fn anime_title_gate_keeps_numbered_title_variants() {
+        let mut opts = opts_strict();
+        opts.kind = Some("series".into());
+        opts.is_anime = true;
+        opts.expected_year = Some(2024);
+        opts.expected_titles = vec!["Kaiju No. 8".into(), "Kaijuu 8-gou".into()];
+
+        let mut romaji = base_stream();
+        romaji.parsed_title = "Kaijuu 8 Gou".into();
+        romaji.year = None;
+        let kept = apply_trust(vec![romaji], &opts);
+        assert_eq!(kept.keep.len(), 1, "romaji release must survive the anime gate");
+        assert!(kept.rejected.is_empty());
+
+        let mut english = base_stream();
+        english.parsed_title = "Kaiju No 8".into();
+        english.year = None;
+        let kept = apply_trust(vec![english], &opts);
+        assert_eq!(kept.keep.len(), 1, "english release must survive the anime gate");
+
+        let mut wrong = base_stream();
+        wrong.parsed_title = "Stranger Things".into();
+        let rejected = apply_trust(vec![wrong], &opts);
+        assert_eq!(rejected.rejected.len(), 1);
+        assert_eq!(rejected.rejected[0].reason, "anime-title-mismatch");
     }
 }

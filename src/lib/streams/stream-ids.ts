@@ -26,7 +26,7 @@ export function buildStreamIds(
     episode?.imdbEpisode != null &&
     episode?.episode != null &&
     episode.episode < episode.imdbEpisode;
-  if (mappedImdb && mappedImdb.startsWith("tt") && imdbEpAligned) {
+  if (!animeMeta && mappedImdb && mappedImdb.startsWith("tt") && imdbEpAligned) {
     push(`${mappedImdb}:${episode!.imdbSeason}:${episode!.imdbEpisode}`);
   }
 

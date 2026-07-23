@@ -79,6 +79,9 @@ export function StremioLayout({
       }
     }
   }, [facetData]);
+  useEffect(() => {
+    if (filter !== "all" && addonFiltered.length === 0 && streams.length > 0) setFilter("all");
+  }, [filter, addonFiltered.length, streams.length]);
   const visibleStreams = useMemo(() => {
     const filtered = addonFiltered.filter((s) => matchesFacets(s, facet));
     if (filter !== "all") return filtered;
@@ -198,6 +201,22 @@ export function StremioLayout({
           />
         ))}
       </div>
+      {streams.length > 0 && visibleStreams.length === 0 && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-elevated/60 px-5 py-6 text-center ring-1 ring-edge-soft">
+          <p className="text-[14px] text-ink-muted">
+            {`All ${streams.length} source${streams.length === 1 ? "" : "s"} are hidden by the active filter.`}
+          </p>
+          <button
+            onClick={() => {
+              setFilter("all");
+              setFacet({});
+            }}
+            className="rounded-full bg-accent-soft px-4 py-2 text-[13px] font-semibold text-accent ring-1 ring-edge-soft transition-transform hover:scale-[1.02] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
       {!pipelineDone && (
         <PendingAddonsPill
           addons={addons}

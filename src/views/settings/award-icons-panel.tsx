@@ -13,13 +13,6 @@ import {
   setCustomIcon,
   useAwardPacks,
 } from "@/lib/award-icons";
-import { MarketCta } from "@/views/settings/theme-panel/custom-themes-section/community-store/market/market-cta";
-import type { IconThumb } from "@/views/settings/theme-panel/custom-themes-section/community-store/market/icon-fan";
-import { requestThemeLibrary } from "@/views/settings/theme-panel/library-open-store";
-import { useSettingsActiveContext } from "./shared";
-
-const AWARD_DOORWAY_KEYS = ["venice", "berlin", "cesar", "annie", "saturn"];
-
 function pickAndUpload(key: string) {
   const input = document.createElement("input");
   input.type = "file";
@@ -63,15 +56,6 @@ export function AwardIconsPanel() {
   const [showHelp, setShowHelp] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const packUrlRef = useRef<HTMLInputElement>(null);
-  const { setActive } = useSettingsActiveContext();
-  const awardPreview: IconThumb[] = AWARD_DOORWAY_KEYS.map((key) => ({
-    src: resolveAwardIcon(key) ?? defaultAwardIcon(key),
-    alt: key,
-  }));
-  const onBrowse = () => {
-    setActive("theme");
-    requestThemeLibrary({ tab: "community", storeTab: "awards" });
-  };
 
   const copyFilename = (key: string) => {
     navigator.clipboard?.writeText(`${key}.png`).catch(() => {});
@@ -155,14 +139,6 @@ export function AwardIconsPanel() {
           )}
         </p>
       </div>
-
-      <MarketCta
-        variant="browse"
-        label={t("View community award packs")}
-        sublabel={t("Icon packs and single-award art from the community")}
-        preview={awardPreview}
-        onClick={onBrowse}
-      />
 
       <section className="flex flex-col gap-3">
         <h3 className="text-[14px] font-semibold text-ink">{t("Install a pack")}</h3>

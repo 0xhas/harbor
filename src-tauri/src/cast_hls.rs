@@ -371,6 +371,7 @@ async fn probe_source(url: &str, headers: &HashMap<String, String>) -> Result<Pr
         .arg("stream=codec_name,codec_type,width,height,r_frame_rate,bit_rate:format=duration,bit_rate")
         .arg("-of")
         .arg("default=noprint_wrappers=1:nokey=0")
+        .arg("-i")
         .arg(url);
     #[cfg(windows)]
     {

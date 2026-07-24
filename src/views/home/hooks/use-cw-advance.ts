@@ -281,7 +281,7 @@ export function useCwAdvance(
     return () => {
       cancelled = true;
     };
-  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus, animeVersion, episodeHiding, hideCaughtUp]);
+  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus, animeVersion, episodeHiding, hideCaughtUp, animeCwEnd]);
 
   if (!enabled) return items;
   const base =

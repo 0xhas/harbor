@@ -184,6 +184,7 @@ export function useCwAdvance(
         // its own fully-fetched list actually contains. Ordering key = season*1e5+episode so
         // it holds for both season-relative and absolute numbering. Only fires on a clean
         // fetch with a non-empty list, so a transient/partial fetch never clears a good item.
+        const origCur = cur;
         const orderKey = (s: number, e: number) => s * 100000 + e;
         let effCur = cur;
         if (fetchOk && list.length > 0) {
@@ -226,13 +227,14 @@ export function useCwAdvance(
           episodeHiding ? (s, e) => isEpisodeHidden(i._id, s, e) : undefined,
         );
         if (nextEp && nextEpAired(list, nextEp, isAnime)) {
+          const displaySeason = origCur.season !== effCur.season ? origCur.season : nextEp.season;
           next.set(i._id, {
             ...i,
             state: {
               ...i.state!,
-              season: nextEp.season,
+              season: displaySeason,
               episode: nextEp.episode,
-              video_id: `${i._id}:${nextEp.season}:${nextEp.episode}`,
+              video_id: `${i._id}:${displaySeason}:${nextEp.episode}`,
               timeOffset: 0,
               flaggedWatched: 0,
             },

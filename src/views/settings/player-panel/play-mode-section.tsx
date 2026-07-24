@@ -93,6 +93,26 @@ export function PlayModePanel() {
       </button>
       <button
         type="button"
+        id="set-auto-skip-stalled-streams"
+        onClick={() => update({ autoNextStreamOnStall: !settings.autoNextStreamOnStall })}
+        className="scroll-mt-28 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
+      >
+        <span
+          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+            settings.autoNextStreamOnStall ? "justify-end bg-accent" : "justify-start bg-edge"
+          }`}
+        >
+          <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-[15px] font-semibold text-ink">{t("Auto-skip stalled streams")}</span>
+          <span className="text-[12.5px] leading-snug text-ink-muted">
+            {t("If a stream hasn't started playing within 10 seconds (a dead source or an addon that's down), automatically try the next available stream. Off by default.")}
+          </span>
+        </div>
+      </button>
+      <button
+        type="button"
         onClick={() => update({ resumePrompt: !settings.resumePrompt })}
         className="flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
       >
@@ -145,6 +165,27 @@ export function PlayModePanel() {
           <span className="text-[15px] font-semibold text-ink">{t("Keep same source on next episode")}</span>
           <span className="text-[12.5px] leading-snug text-ink-muted">
             {t("When auto-playing the next episode, keep the same release/source you were just watching instead of Harbor's top-ranked stream. Falls back to the best stream if that source isn't available.")}
+          </span>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => update({ torrentFullDownload: !settings.torrentFullDownload })}
+        className="mt-1 flex items-start gap-3.5 rounded-2xl border border-edge-soft bg-canvas/40 px-5 py-4 text-start transition-colors hover:border-edge hover:bg-canvas/60"
+      >
+        <span
+          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+            settings.torrentFullDownload ? "justify-end bg-accent" : "justify-start bg-edge"
+          }`}
+        >
+          <span className="h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]" />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-[15px] font-semibold text-ink">
+            {t("Download the whole file while streaming")}
+          </span>
+          <span className="text-[12.5px] leading-snug text-ink-muted">
+            {t("Buffers the whole file in the background as you watch, even while paused, so big remuxes pre-load and you can scrub a cached file with no re-buffering. Works for debrid and torrent streams. Uses more disk and bandwidth; cleared when you switch or close.")}
           </span>
         </div>
       </button>

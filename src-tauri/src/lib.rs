@@ -779,6 +779,7 @@ pub fn run() {
             tray::tray_set_custom_themes,
             stremio_auth::stremio_auth_start,
             song_id::recognize_now_playing,
+            song_id::recognize_now_playing_ai,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
             harbor_take_pending_file,

@@ -164,11 +164,12 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       const prog = engineStats?.streamProgress ?? 0;
       setPlaybackDownloaded(len > 0 ? prog / len : 0);
     } else if (!isLive && !isHls) {
-      setPlaybackDownloaded(1);
+      const dur = snap.durationSec || 0;
+      setPlaybackDownloaded(dur > 0 ? Math.min(1, (snap.positionSec + snap.bufferedSec) / dur) : 0);
     } else {
       setPlaybackDownloaded(0);
     }
-  }, [engineStats?.streamProgress, engineStats?.streamLen, src.url, isP2pEngine, src.isLive, src.meta.id]);
+  }, [engineStats?.streamProgress, engineStats?.streamLen, src.url, isP2pEngine, src.isLive, src.meta.id, snap.positionSec, snap.bufferedSec, snap.durationSec]);
   const shellSnapRef = useRef(snap);
   const snapRef = useRef(snap);
   snapRef.current = snap;
@@ -476,6 +477,30 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       resume: src.resume,
     });
   }, [snap.status, src, hasStarted, inRoom, exitPlayback, openPicker]);
+
+  // Opt-in: advance to the next stream if this pick hasn't started playing within
+  // 10s (dead addon / stalled source). First-load only — a hard error is already
+  // handled above, and mid-playback buffering is left untouched.
+  const hasStartedRef = useRef(hasStarted);
+  hasStartedRef.current = hasStarted;
+  const stallSrcRef = useRef(src);
+  stallSrcRef.current = src;
+  useEffect(() => {
+    if (!settings.autoNextStreamOnStall || src.isLive || inRoom) return;
+    const timer = window.setTimeout(() => {
+      if (autoAdvancedRef.current || hasStartedRef.current) return;
+      const s = stallSrcRef.current;
+      autoAdvancedRef.current = true;
+      if (s.streamRef) markStreamDead(s.streamRef, "load-failed", STUB_TTL_MS);
+      exitPlayback();
+      openPicker(s.meta, s.episode, {
+        autoPlay: true,
+        attempt: (s.attempt ?? 0) + 1,
+        resume: s.resume,
+      });
+    }, 10_000);
+    return () => window.clearTimeout(timer);
+  }, [src.url, src.isLive, settings.autoNextStreamOnStall, inRoom, exitPlayback, openPicker]);
 
   const [dvrOpen, setDvrOpen] = useState(false);
   const pickAnotherOrGuide = useCallback(() => {

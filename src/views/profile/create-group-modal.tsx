@@ -1,9 +1,11 @@
 import { Camera, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { createGroup, setGroupAvatar, type GroupDetail } from "@/lib/social/groups";
+import { createGroup, setGroupAvatar, type GroupDetail, type GroupVisibility } from "@/lib/social/groups";
 import { Avatar } from "./profile-bits";
 import { fileToWebp } from "./group-image-utils";
+import { GroupTagsInput } from "./group-tags-input";
+import { VisibilityToggle } from "./group-visibility-toggle";
 import { useT } from "@/lib/i18n";
 
 export function CreateGroupModal({
@@ -16,6 +18,8 @@ export function CreateGroupModal({
   const t = useT();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [visibility, setVisibility] = useState<GroupVisibility>("invite");
+  const [tags, setTags] = useState<string[]>([]);
   const [pickedBlob, setPickedBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -52,7 +56,7 @@ export function CreateGroupModal({
     if (!trimmed || busy) return;
     setBusy(true);
     setError(null);
-    const created = await createGroup(trimmed, description).catch((e) => {
+    const created = await createGroup(trimmed, { description, visibility, tags }).catch((e) => {
       setError((e as Error).message || t("Could not create group."));
       return null;
     });
@@ -137,6 +141,16 @@ export function CreateGroupModal({
               className="w-full resize-none rounded-[10px] bg-surface px-3 py-2.5 text-[14px] text-ink outline-none ring-1 ring-edge-soft placeholder:text-ink-subtle focus:ring-edge"
             />
           </label>
+
+          <div>
+            <div className="mb-1.5 text-[13px] font-medium text-ink">{t("Who can join")}</div>
+            <VisibilityToggle value={visibility} onChange={setVisibility} />
+          </div>
+
+          <div>
+            <div className="mb-1.5 text-[13px] font-medium text-ink">{t("Tags")}</div>
+            <GroupTagsInput tags={tags} onChange={setTags} />
+          </div>
 
           {error && (
             <p className="rounded-lg bg-danger/15 px-3 py-2 text-[12.5px] text-danger">{error}</p>

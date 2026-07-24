@@ -59,6 +59,7 @@ const catalog: Record<string, string> = {
     "يحتاج إلى 10 عناوين على الأقل لمظهر أفضل 10",
 
   "Customize home": "تخصيص الرئيسية",
+  "Customize anime": "تخصيص الأنمي",
   "Home layout": "تخطيط الرئيسية",
   "How the Home page assembles its rails.": "كيف تُرتّب صفحة الرئيسية صفوفها.",
   "Card overlays": "تراكبات البطاقات",

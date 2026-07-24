@@ -1,5 +1,5 @@
 import { Info } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 import type { RankSource } from "@/lib/harbor-rank";
 
@@ -12,9 +12,24 @@ const TABS: Tab[] = [
     provenance: "Our all-time ranking of a body of work, fully explained.",
   },
   {
+    source: "trending",
+    label: "Trending",
+    provenance: "People from the week's hottest titles, weighted by what is being talked about.",
+  },
+  {
+    source: "rising",
+    label: "Rising Stars",
+    provenance: "Breakout talent from this week's hottest titles, before they are household names.",
+  },
+  {
+    source: "contenders",
+    label: "Contenders",
+    provenance: "In the running this awards season, from the latest nominations and wins.",
+  },
+  {
     source: "tmdb",
     label: "Top on TMDB",
-    provenance: "Who is being watched and searched right now. Live popularity.",
+    provenance: "Steady popularity across TMDB right now.",
   },
   {
     source: "imdb",
@@ -29,38 +44,32 @@ const TABS: Tab[] = [
   },
 ];
 
-function findScrollParent(node: HTMLElement | null): HTMLElement | null {
-  let el = node?.parentElement ?? null;
-  while (el) {
-    const oy = getComputedStyle(el).overflowY;
-    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) return el;
-    el = el.parentElement;
-  }
-  return null;
-}
-
 export function PeopleSourceSwitch({
   source,
+  sources,
   onSource,
   onExplain,
 }: {
   source: RankSource;
+  sources: RankSource[] | null;
   onSource: (source: RankSource) => void;
   onExplain: () => void;
 }) {
   const t = useT();
   const listRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
   const btnRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [indicator, setIndicator] = useState<{ left: number; width: number }>({
-    left: 0,
-    width: 0,
-  });
-  const [solid, setSolid] = useState(false);
+  const [indicator, setIndicator] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+  const [armed, setArmed] = useState(false);
+
+  const visible = useMemo(() => {
+    if (!sources || sources.length === 0) return TABS;
+    const allowed = new Set<RankSource>([...sources, source]);
+    return TABS.filter((tab) => allowed.has(tab.source));
+  }, [sources, source]);
 
   const measure = useCallback(() => {
     const list = listRef.current;
-    const index = TABS.findIndex((tab) => tab.source === source);
+    const index = visible.findIndex((tab) => tab.source === source);
     const btn = btnRefs.current[index];
     if (!list || !btn) return;
     const listBox = list.getBoundingClientRect();
@@ -68,7 +77,7 @@ export function PeopleSourceSwitch({
     const left = btnBox.left - listBox.left;
     const width = btnBox.width;
     setIndicator((prev) => (prev.left === left && prev.width === width ? prev : { left, width }));
-  }, [source]);
+  }, [source, visible]);
 
   useLayoutEffect(() => {
     measure();
@@ -84,23 +93,15 @@ export function PeopleSourceSwitch({
   }, [measure]);
 
   useEffect(() => {
-    const scroller = findScrollParent(barRef.current);
-    if (!scroller) return;
-    const onScroll = () => setSolid(scroller.scrollTop > 4);
-    onScroll();
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    return () => scroller.removeEventListener("scroll", onScroll);
-  }, []);
+    if (indicator.width === 0 || armed) return;
+    const raf = requestAnimationFrame(() => setArmed(true));
+    return () => cancelAnimationFrame(raf);
+  }, [indicator.width, armed]);
 
-  const provenance = TABS.find((tab) => tab.source === source)?.provenance ?? "";
+  const provenance = visible.find((tab) => tab.source === source)?.provenance ?? "";
 
   return (
-    <div
-      ref={barRef}
-      className={`sticky top-0 z-30 -mx-6 px-6 transition-colors duration-200 motion-reduce:transition-none ${
-        solid ? "bg-canvas/95 backdrop-blur ring-1 ring-edge-soft" : "bg-transparent"
-      }`}
-    >
+    <div className="min-w-0">
       <div className="flex items-center gap-3 pt-3">
         <div
           ref={listRef}
@@ -108,7 +109,7 @@ export function PeopleSourceSwitch({
           aria-label={t("Ranking source")}
           className="relative flex flex-wrap items-center gap-1"
         >
-          {TABS.map((tab, i) => {
+          {visible.map((tab, i) => {
             const active = tab.source === source;
             return (
               <button
@@ -130,7 +131,9 @@ export function PeopleSourceSwitch({
           })}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-accent transition-[left,width] duration-300 ease-out motion-reduce:transition-none"
+            className={`pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-accent ${
+              armed ? "transition-[left,width] duration-250 ease-out motion-reduce:transition-none" : ""
+            }`}
             style={{ left: indicator.left, width: indicator.width }}
           />
         </div>

@@ -22,7 +22,12 @@ export function IdentifySongButton({
     if (pending) return;
     setPending(true);
     try {
-      await identifyNowPlaying(settings.auddKey ?? "");
+      await identifyNowPlaying({
+        provider: settings.songIdProvider,
+        auddKey: settings.auddKey ?? "",
+        aiKey: settings.songIdAiKey ?? "",
+        aiModel: settings.songIdAiModel ?? "",
+      });
     } finally {
       setPending(false);
     }

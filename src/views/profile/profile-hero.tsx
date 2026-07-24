@@ -1,4 +1,4 @@
-import { Check, ImagePlus, Loader2, MapPin, Play, Settings2, Share2, UserMinus, UserPlus, Users } from "lucide-react";
+import { Check, ImagePlus, Loader2, MapPin, Settings2, Share2, UserMinus, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { ShareModal } from "./share-modal";
 import { countryFlagSrc } from "@/components/flag";
@@ -124,46 +124,6 @@ export function ProfileHero({
                 </span>
               )}
             </div>
-            {p.watching && (
-              <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full bg-elevated/85 py-1 pe-3.5 ps-1 ring-1 ring-edge-soft">
-                {p.watching.posterUrl ? (
-                  <img
-                    src={p.watching.posterUrl}
-                    alt=""
-                    draggable={false}
-                    className="h-6 w-6 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-raised">
-                    {p.watching.kind === "party" ? (
-                      <Users size={11} strokeWidth={2.6} className="text-ink-muted" />
-                    ) : (
-                      <Play size={11} strokeWidth={2.6} className="text-ink-muted" />
-                    )}
-                  </span>
-                )}
-                <span className="truncate text-[12.5px] text-ink-muted">
-                  {p.watching.kind === "party" ? (
-                    <>
-                      {t("In a watch party")}
-                      {p.watching.partySize ? ` · ${t("{count} aboard", { count: p.watching.partySize })}` : ""}
-                      {p.watching.title ? (
-                        <>
-                          {" · "}
-                          <span className="text-ink">{p.watching.title}</span>
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      {p.watching.paused ? t("Paused on ") : t("Watching ")}
-                      <span className="text-ink">{p.watching.title ?? t("something")}</span>
-                      {p.watching.sub ? ` · ${p.watching.sub}` : ""}
-                    </>
-                  )}
-                </span>
-              </div>
-            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {p.isOwner && onEdit ? (

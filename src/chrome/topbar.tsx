@@ -1,5 +1,5 @@
 import { ArrowLeft, Search, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BackChrome } from "@/chrome/back-chrome";
 import { HarborMark } from "@/components/icons/harbor-mark";
@@ -228,16 +228,22 @@ export function TogetherButton({
   popoverPlacement?: "below-right" | "above-left";
   connectStyle?: "tab" | "popover";
 } = {}) {
-  const { snapshot, modalOpen, openModal, closeModal, clientId } = useTogether();
+  const { snapshot, modalOwner, openModal, closeModal, clientId } = useTogether();
   const { avatar: selfAvatar, color: selfColor } = useSelfIdentity();
   const { settings } = useSettings();
   const cleanModal = settings.transparentTopBar;
   const t = useT();
   const live = snapshot.state === "joined";
   const wrapRef = useRef<HTMLDivElement>(null);
+  const modalId = useId();
+  const ownsModal = modalOwner === modalId;
 
   useEffect(() => {
-    if (!modalOpen || cleanModal) return;
+    if (modalOwner === "auto") openModal(modalId);
+  }, [modalId, modalOwner, openModal]);
+
+  useEffect(() => {
+    if (!ownsModal || cleanModal) return;
     const onDown = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) closeModal();
     };
@@ -250,13 +256,13 @@ export function TogetherButton({
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [modalOpen, closeModal, cleanModal]);
+  }, [ownsModal, closeModal, cleanModal]);
 
   const visible = snapshot.participants.slice(0, TOPBAR_MAX_AVATARS);
   const overflow = Math.max(0, snapshot.participants.length - TOPBAR_MAX_AVATARS);
 
   const above = popoverPlacement === "above-left";
-  const tabOpen = modalOpen && !cleanModal && !above;
+  const tabOpen = ownsModal && !cleanModal && !above;
   const idleSize = live
     ? variant === "ghost"
       ? "h-9 gap-2 ps-3 pe-2"
@@ -285,8 +291,8 @@ export function TogetherButton({
       <button
         aria-label={t("chrome.watchTogether")}
         aria-haspopup="dialog"
-        aria-expanded={modalOpen}
-        onClick={() => (modalOpen ? closeModal() : openModal())}
+        aria-expanded={ownsModal}
+        onClick={() => (ownsModal ? closeModal() : openModal(modalId))}
         className={`harbor-together-btn relative flex items-center transition-colors duration-150 ${tabOpen ? "harbor-wt-tab" : ""} ${sizing} ${chrome}`}
       >
         {live ? (
@@ -339,7 +345,7 @@ export function TogetherButton({
           <Users size={17} strokeWidth={1.9} />
         )}
       </button>
-      {modalOpen && !cleanModal && (
+      {ownsModal && !cleanModal && (
         <div
           className={`harbor-wt-modal absolute z-50 ${
             above ? "bottom-[calc(100%-1px)] start-0" : "end-0 top-[calc(100%-1px)]"
@@ -348,7 +354,7 @@ export function TogetherButton({
           <TogetherPopover placement={popoverPlacement} connectStyle={connectStyle} />
         </div>
       )}
-      {modalOpen && cleanModal && <TogetherModalShell />}
+      {ownsModal && cleanModal && <TogetherModalShell />}
     </div>
   );
 }

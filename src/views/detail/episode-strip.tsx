@@ -47,7 +47,9 @@ export function EpisodeStrip({
     () =>
       episodes.map((ep) => {
         const tmdbStill = ep.stillPath
-          ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
+          ? ep.stillPath.startsWith("http")
+            ? ep.stillPath
+            : `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
           : ep.stillUrl;
         const stills = [tmdbStill, thumbnailFor(ep)].filter((u): u is string => !!u);
         return {
@@ -155,7 +157,10 @@ function EpisodeStripCard({
 
   const still = useMemo(() => {
     const tmdbSize = settings.hdEpisodeImages ? "original" : "w300";
-    if (imgIdx === 0 && ep.stillPath) return `https://image.tmdb.org/t/p/${tmdbSize}${ep.stillPath}`;
+    if (imgIdx === 0 && ep.stillPath)
+      return ep.stillPath.startsWith("http")
+        ? ep.stillPath
+        : `https://image.tmdb.org/t/p/${tmdbSize}${ep.stillPath}`;
     if (imgIdx === 0 && !ep.stillPath && ep.stillUrl) return ep.stillUrl;
     if (imgIdx <= 1 && thumbnail) return thumbnail;
     return undefined;

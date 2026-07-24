@@ -1,5 +1,6 @@
 import type { FeaturedList } from "@/lib/social/featured-lists";
 import type { SocialKey } from "@/lib/social/socials";
+import type { RatingsSummary } from "@/lib/ratings/types";
 
 export type SocialEntry = { service: SocialKey; value: string };
 
@@ -41,6 +42,8 @@ export type ProfileWatching = {
   partySize?: number;
   paused?: boolean;
   startedAt?: number;
+  positionSec?: number;
+  durationSec?: number;
 };
 
 export type ProfileSummary = {
@@ -62,6 +65,7 @@ export type ProfileSummary = {
   memberSince: string;
   counts: ProfileCounts;
   showcase?: ShowcaseItem;
+  ratings?: RatingsSummary;
   featuredLists?: FeaturedList[];
   socials?: ResolvedSocial[];
   shownBadges?: string[];

@@ -103,11 +103,14 @@ export function LibraryPanel({
   const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
   const [auddDraft, setAuddDraft] = useState(settings.auddKey);
-  const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | "audd" | null>(null);
+  const [songAiDraft, setSongAiDraft] = useState(settings.songIdAiKey);
+  const [extraSaved, setExtraSaved] = useState<
+    "mdblist" | "postersrv" | "ai" | "audd" | "songai" | null
+  >(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
   const [tvdbGuide, setTvdbGuide] = useState(false);
   const extraTimerRef = useRef<number | null>(null);
-  const flashExtra = (k: "mdblist" | "postersrv" | "ai" | "audd") => {
+  const flashExtra = (k: "mdblist" | "postersrv" | "ai" | "audd" | "songai") => {
     setExtraSaved(k);
     if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
     extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
@@ -157,6 +160,22 @@ export function LibraryPanel({
           onChange={(v) => update({ animeOnlyInAnimeRoom: v })}
           preview={<HomeRowPreview kind="anime-room" />}
         />
+        <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 py-3 pl-[30px] pr-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[14px] font-medium text-ink">{t("When the latest episode ends")}</span>
+            <span className="text-[12.5px] leading-relaxed text-ink-subtle">
+              {t("Hide until the next episode airs, or keep showing a countdown to when it drops.")}
+            </span>
+          </div>
+          <Segmented
+            value={settings.animeCwEnd}
+            options={[
+              { value: "hide", label: t("Hide") },
+              { value: "timer", label: t("Timer") },
+            ]}
+            onChange={(v) => update({ animeCwEnd: v as "hide" | "timer" })}
+          />
+        </div>
         <ToggleRow
           label={t("Advance Continue Watching to the next episode")}
           sub={t("When you finish an episode, the Home Continue Watching card moves on to the next episode instead of sitting at 0 minutes left.")}
@@ -500,25 +519,64 @@ export function LibraryPanel({
             </>
           }
         />
-        <KeyField
-          label={t("AudD · in-player song ID")}
-          placeholder={t("AudD API token")}
-          value={auddDraft}
-          onChange={setAuddDraft}
-          onSave={() => {
-            update({ auddKey: auddDraft.trim() });
-            flashExtra("audd");
-          }}
-          saved={extraSaved === "audd"}
-          iconSrc={auddLogo}
-          iconBg="#EE1066"
-          help={
-            <>
-              Powers the Identify-song button in the player. Get a token at{" "}
-              <ExtLink href="https://dashboard.audd.io/">dashboard.audd.io</ExtLink>.
-            </>
-          }
-        />
+        <div className="flex items-center gap-2 ps-1">
+          <span className="text-[13px] font-medium text-ink-muted">{t("Song ID provider")}</span>
+          <div className="flex overflow-hidden rounded-lg border border-edge-soft">
+            {(["audd", "ai"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => update({ songIdProvider: p })}
+                className={`px-3 py-1 text-[12.5px] font-semibold transition-colors ${
+                  settings.songIdProvider === p
+                    ? "bg-ink text-canvas"
+                    : "bg-canvas/40 text-ink-muted hover:bg-canvas/70 hover:text-ink"
+                }`}
+              >
+                {p === "audd" ? t("AudD") : t("AI (Gemini)")}
+              </button>
+            ))}
+          </div>
+        </div>
+        {settings.songIdProvider === "ai" ? (
+          <KeyField
+            label={t("Gemini · in-player song ID")}
+            placeholder={t("Gemini API key")}
+            value={songAiDraft}
+            onChange={setSongAiDraft}
+            onSave={() => {
+              update({ songIdAiKey: songAiDraft.trim() });
+              flashExtra("songai");
+            }}
+            saved={extraSaved === "songai"}
+            help={
+              <>
+                Identifies the song with Google Gemini (free tier, no usage cap). Get a key at{" "}
+                <ExtLink href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</ExtLink>. Windows only.
+              </>
+            }
+          />
+        ) : (
+          <KeyField
+            label={t("AudD · in-player song ID")}
+            placeholder={t("AudD API token")}
+            value={auddDraft}
+            onChange={setAuddDraft}
+            onSave={() => {
+              update({ auddKey: auddDraft.trim() });
+              flashExtra("audd");
+            }}
+            saved={extraSaved === "audd"}
+            iconSrc={auddLogo}
+            iconBg="#EE1066"
+            help={
+              <>
+                Powers the Identify-song button in the player. Get a token at{" "}
+                <ExtLink href="https://dashboard.audd.io/">dashboard.audd.io</ExtLink>.
+              </>
+            }
+          />
+        )}
         <KeyField
           label={t("Custom poster service")}
           placeholder={t("RPDB key above, https://btttr.cc, or a {imdbId} template")}

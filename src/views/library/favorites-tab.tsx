@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useMemo } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
@@ -128,10 +128,10 @@ function EmptyFavorites() {
   const t = useT();
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
-      <Star size={28} strokeWidth={1.6} className="text-ink-subtle" />
+      <Heart size={28} strokeWidth={1.6} className="text-ink-subtle" />
       <h2 className="text-[16px] font-semibold text-ink">{t("No favorites yet")}</h2>
       <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
-        {t("Tap the star on any movie, show, or manga, or the heart on a character, to save it here.")}
+        {t("Tap the heart on any movie, show, manga, or character to save it here.")}
       </p>
     </div>
   );

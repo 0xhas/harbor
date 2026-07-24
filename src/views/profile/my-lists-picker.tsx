@@ -1,4 +1,4 @@
-import { Check, ListVideo, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ListVideo, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Poster } from "@/components/poster";
 import { useCustomLists } from "@/lib/custom-lists";
@@ -81,6 +81,70 @@ function ListRow({
   );
 }
 
+function SelectedRow({
+  list,
+  index,
+  total,
+  ghost,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: {
+  list: PickableList;
+  index: number;
+  total: number;
+  ghost?: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}) {
+  const t = useT();
+  return (
+    <div className="flex items-center gap-2.5 rounded-[10px] bg-elevated p-2.5 ring-1 ring-edge">
+      <div className="flex shrink-0 flex-col">
+        <button
+          onClick={onMoveUp}
+          disabled={index === 0}
+          aria-label={t("Move up")}
+          className="flex h-6 w-7 items-center justify-center rounded-t-[6px] text-ink-muted transition-colors hover:bg-surface hover:text-ink disabled:opacity-25"
+        >
+          <ChevronUp size={16} strokeWidth={2.5} />
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={index === total - 1}
+          aria-label={t("Move down")}
+          className="flex h-6 w-7 items-center justify-center rounded-b-[6px] text-ink-muted transition-colors hover:bg-surface hover:text-ink disabled:opacity-25"
+        >
+          <ChevronDown size={16} strokeWidth={2.5} />
+        </button>
+      </div>
+      <span className="w-4 shrink-0 text-center text-[13px] font-semibold tabular-nums text-ink-subtle">{index + 1}</span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-medium text-ink">{list.name}</div>
+        <div className="text-[12px] text-ink-subtle">
+          {list.items.length} {list.items.length === 1 ? t("title") : t("titles")}
+          {ghost && <span> · {t("not in your library")}</span>}
+        </div>
+      </div>
+      <div className="flex shrink-0 gap-1">
+        {list.items.slice(0, 3).map((item) => (
+          <div key={item.id} className="w-8">
+            <Poster src={item.poster || undefined} seed={item.name || item.id} ratio="portrait" className="rounded-[6px]" />
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={onRemove}
+        aria-label={t("Remove from featured")}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface hover:text-danger"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+}
+
 export function MyListsPicker({ onClose }: { onClose?: () => void }) {
   const t = useT();
   const local = useCustomLists();
@@ -99,6 +163,11 @@ export function MyListsPicker({ onClose }: { onClose?: () => void }) {
   }, [lists, served]);
   const entries = useMemo(() => [...lists, ...ghosts], [lists, ghosts]);
   const ghostIds = useMemo(() => new Set(ghosts.map((g) => g.id)), [ghosts]);
+  const selectedEntries = useMemo(
+    () => selected.map((id) => entries.find((e) => e.id === id)).filter((l): l is PickableList => !!l),
+    [selected, entries],
+  );
+  const unselectedEntries = useMemo(() => entries.filter((e) => !selected.includes(e.id)), [entries, selected]);
 
   useEffect(() => {
     const handle = currentAuthor()?.handle;
@@ -131,6 +200,17 @@ export function MyListsPicker({ onClose }: { onClose?: () => void }) {
       if (cur.includes(id)) return cur.filter((x) => x !== id);
       if (cur.length >= MAX_FEATURED_LISTS) return cur;
       return [...cur, id];
+    });
+  };
+
+  const move = (id: string, dir: -1 | 1) => {
+    setSelected((cur) => {
+      const i = cur.indexOf(id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= cur.length) return cur;
+      const next = [...cur];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
     });
   };
 
@@ -178,16 +258,42 @@ export function MyListsPicker({ onClose }: { onClose?: () => void }) {
               <p className="mt-1 text-[12px] text-ink-subtle">{t("Create lists in your library to feature them here")}</p>
             </div>
           ) : (
-            entries.map((list) => (
-              <ListRow
-                key={list.id}
-                list={list}
-                selected={selected.includes(list.id)}
-                ghost={ghostIds.has(list.id)}
-                disabled={!selected.includes(list.id) && selected.length >= MAX_FEATURED_LISTS}
-                onToggle={() => toggle(list.id)}
-              />
-            ))
+            <>
+              {selectedEntries.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">{t("Featured order")}</div>
+                  {selectedEntries.map((list, i) => (
+                    <SelectedRow
+                      key={list.id}
+                      list={list}
+                      index={i}
+                      total={selectedEntries.length}
+                      ghost={ghostIds.has(list.id)}
+                      onMoveUp={() => move(list.id, -1)}
+                      onMoveDown={() => move(list.id, 1)}
+                      onRemove={() => toggle(list.id)}
+                    />
+                  ))}
+                </div>
+              )}
+              {unselectedEntries.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  {selectedEntries.length > 0 && (
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">{t("Add a list")}</div>
+                  )}
+                  {unselectedEntries.map((list) => (
+                    <ListRow
+                      key={list.id}
+                      list={list}
+                      selected={false}
+                      ghost={ghostIds.has(list.id)}
+                      disabled={selected.length >= MAX_FEATURED_LISTS}
+                      onToggle={() => toggle(list.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
           {error && <p className="text-[13px] text-danger">{error}</p>}
         </div>

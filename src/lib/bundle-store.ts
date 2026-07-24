@@ -113,6 +113,22 @@ export function forgetBundleUpload(id: string): void {
   saveMyBundleUploads(getMyBundleUploads().filter((x) => x.id !== id));
 }
 
+const BUNDLE_TOO_LARGE = "This bundle is too large to publish. Use fewer badges or smaller art, then try again.";
+const BUNDLE_UNREACHABLE = "Couldn't reach the bundle library. Check your connection, or if the bundle is very large try fewer or smaller icons.";
+
+async function postBundleForm(url: string, fd: FormData): Promise<Record<string, unknown>> {
+  let r: Response;
+  try {
+    r = await fetch(url, { method: "POST", headers: authHeaders(), body: fd });
+  } catch {
+    throw new Error(BUNDLE_UNREACHABLE);
+  }
+  if (r.status === 413) throw new Error(BUNDLE_TOO_LARGE);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((d as { error?: string }).error || "Upload failed.");
+  return d as Record<string, unknown>;
+}
+
 export async function uploadBundle(
   manifestJson: string,
   cover: Blob,
@@ -124,10 +140,8 @@ export async function uploadBundle(
   fd.append("cover", cover, "cover.png");
   for (const icon of icons) fd.append("icons", icon.blob, `${icon.key}.png`);
   if (author) fd.append("author", author);
-  const r = await fetch(`${API}/bundles`, { method: "POST", headers: authHeaders(), body: fd });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || "Upload failed.");
-  return d;
+  const d = await postBundleForm(`${API}/bundles`, fd);
+  return d as unknown as BundleUploadResult;
 }
 
 export async function updateBundle(
@@ -142,9 +156,7 @@ export async function updateBundle(
   if (cover) fd.append("cover", cover, "cover.png");
   for (const icon of icons) fd.append("icons", icon.blob, `${icon.key}.png`);
   if (changelog) fd.append("changelog", changelog);
-  const r = await fetch(`${API}/bundles/${id}/update`, { method: "POST", headers: authHeaders(), body: fd });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || "Update failed.");
+  const d = await postBundleForm(`${API}/bundles/${id}/update`, fd);
   return normalize(d);
 }
 
@@ -162,6 +174,15 @@ export async function deleteBundle(id: string, ownerToken: string): Promise<void
   });
   if (!r.ok) throw new Error("Could not delete.");
   forgetBundleUpload(id);
+}
+
+export async function reportBundle(id: string, reason?: string): Promise<void> {
+  const r = await fetch(`${API}/bundles/${id}/report`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ reason: reason ?? "" }),
+  });
+  if (!r.ok) throw new Error("Could not send report.");
 }
 
 function toAwardPack(b: StoreBundle): AwardPack {

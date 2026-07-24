@@ -35,6 +35,7 @@ const catalog: Record<string, string> = {
   "Needs artwork-rich titles to feed the hero": "Precisa de títulos com bastante arte para alimentar o destaque",
   "Needs at least 10 titles for the Top 10 look": "Precisa de pelo menos 10 títulos para o visual Top 10",
   "Customize home": "Personalizar início",
+  "Customize anime": "Personalizar animes",
   "Home layout": "Layout da Início",
   "How the Home page assembles its rails.": "Como a página Início monta suas faixas.",
   "Card overlays": "Sobreposições de cartão",

@@ -107,7 +107,24 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       scrapers?: unknown;
       scrapersAcknowledged?: boolean;
       _scrapersV2?: boolean;
+      _animeRowsV1?: boolean;
     };
+    if (!parsed._animeRowsV1) {
+      const prev = (parsed.animeRows ?? {}) as Partial<Settings["animeRows"]>;
+      const hiddenSet = new Set<string>(Array.isArray(prev.hidden) ? prev.hidden : []);
+      const anilist = Array.isArray(parsed.animeAnilistRowsHidden) ? parsed.animeAnilistRowsHidden : [];
+      const mal = Array.isArray(parsed.animeMalRowsHidden) ? parsed.animeMalRowsHidden : [];
+      if (anilist.includes("yourLists")) hiddenSet.add("yourAnilistLists");
+      if (anilist.includes("trending")) hiddenSet.add("anilistTrending");
+      if (anilist.includes("top100")) hiddenSet.add("anilistTop100");
+      if (mal.includes("yourMalLists")) hiddenSet.add("yourMalLists");
+      parsed.animeRows = {
+        order: Array.isArray(prev.order) ? prev.order : [],
+        hidden: [...hiddenSet],
+        renamed: prev.renamed && typeof prev.renamed === "object" ? prev.renamed : {},
+      };
+      parsed._animeRowsV1 = true;
+    }
     if (!parsed._pickerLayoutStremioV2) {
       if (parsed.pickerLayout === "condensed") parsed.pickerLayout = "stremio";
       parsed._pickerLayoutStremio = true;
@@ -178,6 +195,10 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       navCustomization: {
         ...DEFAULT.navCustomization,
         ...(parsed.navCustomization ?? {}),
+      },
+      animeRows: {
+        ...DEFAULT.animeRows,
+        ...(parsed.animeRows ?? {}),
       },
       letterboxd: {
         ...DEFAULT.letterboxd,

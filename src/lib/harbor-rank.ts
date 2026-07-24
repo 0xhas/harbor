@@ -1,7 +1,7 @@
 import type { KnownForEntry } from "./rankings";
 import { safeFetch } from "./safe-fetch";
 
-export type RankSource = "harbor" | "tmdb" | "imdb" | "consensus";
+export type RankSource = "harbor" | "trending" | "rising" | "contenders" | "tmdb" | "imdb" | "consensus";
 
 export type PeopleDept = "Acting" | "Directing" | "Production" | "Writing";
 
@@ -14,14 +14,19 @@ export type ScoreComponents = {
 
 export type TopTitle = {
   metaId: string;
+  tmdbId?: number | null;
+  mediaType?: string | null;
   title: string;
   year: number | null;
   role: "Lead" | "Director" | "Supporting" | "Producer" | "Writer";
   rating: number | null;
   votes: number | null;
   awardWinner: boolean;
+  awardType?: string | null;
   posterPath: string | null;
 };
+
+export type PersonAward = { type: string; wins: number };
 
 export type HarborRankExplanation = {
   id: number;
@@ -42,6 +47,10 @@ export type HarborRankExplanation = {
   ratedTitles: number;
   awardsDataMissing: boolean;
   topTitles: TopTitle[];
+  stills?: string[];
+  awards?: PersonAward[];
+  genres?: string[];
+  genreScores?: Record<string, number>;
 };
 
 export type PersonRankEntry = {
@@ -52,6 +61,12 @@ export type PersonRankEntry = {
   department: PeopleDept;
   knownFor?: KnownForEntry[];
   blendSources?: RankSource[];
+  delta?: number | null;
+  previousRank?: number | null;
+  stills?: string[];
+  genres?: string[];
+  genreScores?: Record<string, number>;
+  country?: string | null;
 };
 
 export type RankManifest = {

@@ -90,20 +90,25 @@ export function isAnimeRow(row: AddonRow): boolean {
   return animeIds / sample.length >= 0.5;
 }
 
-export function RowSkeleton({ title }: { title: string }) {
+export function RowSkeleton({ title, shape = "portrait" }: { title: string; shape?: "portrait" | "landscape" }) {
   const { settings } = useSettings();
-  const w = Math.round(144 * settings.posterScale);
+  const landscape = shape === "landscape";
+  const w = landscape ? 260 : Math.round(144 * settings.posterScale);
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-baseline justify-between px-1">
         <h2 className="font-display text-[26px] font-medium text-ink/85">{title}</h2>
       </div>
       <div className="flex gap-5 overflow-hidden px-1">
-        {Array.from({ length: 14 }).map((_, i) => (
+        {Array.from({ length: landscape ? 8 : 14 }).map((_, i) => (
           <div
             key={i}
             className="harbor-skel flex-shrink-0 bg-elevated/50"
-            style={{ width: w, aspectRatio: "2 / 3", borderRadius: settings.posterRadius }}
+            style={{
+              width: w,
+              aspectRatio: landscape ? "16 / 9" : "2 / 3",
+              borderRadius: landscape ? 14 : settings.posterRadius,
+            }}
           />
         ))}
       </div>

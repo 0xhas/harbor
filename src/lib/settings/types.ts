@@ -211,6 +211,7 @@ export type Settings = {
   playerMenuBlack: boolean;
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
+  autoNextStreamOnStall: boolean;
   seasonSourceLock: boolean;
   rememberLastStream: boolean;
   keepSourceNextEpisode: boolean;
@@ -307,6 +308,9 @@ export type Settings = {
   customHoverId: string;
   mdblistKey: string;
   auddKey: string;
+  songIdProvider: "audd" | "ai";
+  songIdAiKey: string;
+  songIdAiModel: string;
   aiSearchKey: string;
   aiSearchModel: string;
   aiSearchProvider: "openrouter" | "groq";
@@ -376,6 +380,7 @@ export type Settings = {
   librarySort: "recent" | "title" | "year";
   preferCustomMetaAddon: boolean;
   animeOnlyInAnimeRoom: boolean;
+  animeCwEnd: "hide" | "timer";
   cwAdvanceNext: boolean;
   cwHideCaughtUp: boolean;
   useNativeTitleBar: boolean;
@@ -403,6 +408,11 @@ export type Settings = {
     listRows?: string[];
   };
   navCustomization: {
+    order: string[];
+    hidden: string[];
+    renamed: Record<string, string>;
+  };
+  animeRows: {
     order: string[];
     hidden: string[];
     renamed: Record<string, string>;

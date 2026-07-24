@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Package, Share2, Star, X } from "lucide-react";
-import { getBundle, installBundle, rateBundle, type StoreBundle } from "@/lib/bundle-store";
+import { Check, Flag, Package, Share2, Star, X } from "lucide-react";
+import { getBundle, installBundle, rateBundle, reportBundle, type StoreBundle } from "@/lib/bundle-store";
 import { fmtCount } from "./format";
 import { BundleFit } from "./market/bundle-fit";
 import { PackContents } from "./market/pack-contents";
@@ -16,6 +16,7 @@ export function BundleDetail({ bundle, onClose }: { bundle: StoreBundle; onClose
   const [myRating, setMyRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [reported, setReported] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -52,6 +53,14 @@ export function BundleDetail({ bundle, onClose }: { bundle: StoreBundle; onClose
       await navigator.clipboard.writeText(t.share);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+
+  const report = async () => {
+    if (reported) return;
+    try {
+      await reportBundle(t.id);
+      setReported(true);
     } catch {}
   };
 
@@ -113,6 +122,15 @@ export function BundleDetail({ bundle, onClose }: { bundle: StoreBundle; onClose
                 {copied ? <Check size={16} /> : <Share2 size={16} />}
                 {copied ? "Copied" : "Share"}
               </MarketCta>
+              <button
+                type="button"
+                onClick={report}
+                disabled={reported}
+                title="Report this pack"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:bg-raised hover:text-ink disabled:opacity-60"
+              >
+                <Flag size={14} strokeWidth={2.2} /> {reported ? "Reported" : "Report"}
+              </button>
               <div
                 className="ms-auto flex items-center gap-0.5"
                 role="group"

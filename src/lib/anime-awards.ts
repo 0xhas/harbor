@@ -48,19 +48,6 @@ export type AwardWin = {
   isAOTY: boolean;
 };
 
-// The repository intentionally excludes third-party award artwork. Keep the
-// default marks self-contained; users can still override them with award packs.
-function defaultAwardMark(label: string, color: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 64"><rect width="160" height="64" rx="14" fill="${color}"/><text x="80" y="39" fill="white" font-family="system-ui,sans-serif" font-size="25" font-weight="700" text-anchor="middle">${label}</text></svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
-
-const CRUNCHYROLL_MARK = defaultAwardMark("CR", "#f47521");
-const TAAF_MARK = defaultAwardMark("TAAF", "#ef8b27");
-const JMAF_MARK = defaultAwardMark("JMAF", "#6d5bd0");
-const R_ANIME_MARK = defaultAwardMark("r/anime", "#ff4500");
-const KOBE_MARK = defaultAwardMark("Kobe", "#0f766e");
-
 type Raw = {
   categories: Record<string, { name: string; winners: { year: number; title: string }[] }>;
 };
@@ -91,40 +78,40 @@ const SOURCE_META: Record<
     id: "crunchyroll",
     name: "Crunchyroll Anime Awards",
     shortName: "CR",
-    icon: CRUNCHYROLL_MARK,
-    iconSmall: CRUNCHYROLL_MARK,
+    icon: "/awards/animeaward.webp",
+    iconSmall: "/awards/animeaward.webp",
     prestige: 100,
   },
   taaf: {
     id: "taaf",
     name: "Tokyo Anime Award Festival",
     shortName: "TAAF",
-    icon: TAAF_MARK,
-    iconSmall: TAAF_MARK,
+    icon: "/awards/taaf_logo.webp",
+    iconSmall: "/awards/taaf.webp",
     prestige: 95,
   },
   jmaf: {
     id: "jmaf",
     name: "Japan Media Arts Festival",
     shortName: "JMAF",
-    icon: JMAF_MARK,
-    iconSmall: JMAF_MARK,
+    icon: "/awards/jmaf_logo.webp",
+    iconSmall: "/awards/jmaf.webp",
     prestige: 90,
   },
   r_anime: {
     id: "r_anime",
     name: "r/anime Awards",
     shortName: "r/anime",
-    icon: R_ANIME_MARK,
-    iconSmall: R_ANIME_MARK,
+    icon: "/awards/r_anime_logo.webp",
+    iconSmall: "/awards/r_anime.webp",
     prestige: 70,
   },
   animation_kobe: {
     id: "animation_kobe",
     name: "Animation Kobe",
     shortName: "Kobe",
-    icon: KOBE_MARK,
-    iconSmall: KOBE_MARK,
+    icon: "/awards/animation_kobe_logo.svg",
+    iconSmall: "/awards/animation_kobe.svg",
     prestige: 60,
   },
 };

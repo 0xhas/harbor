@@ -21,6 +21,7 @@ export type CwCard = {
   episode?: number;
   videoId?: string;
   progress: number;
+  at: number;
 };
 
 function localToLibraryItem(e: ReturnType<typeof listLocalCw>[number]): LibraryItem {
@@ -60,6 +61,13 @@ function episodeOf(i: LibraryItem): { season: number; episode: number } | null {
   return parsed && parsed.episode > 0 ? parsed : null;
 }
 
+function watchedAt(i: LibraryItem): number {
+  const lw = i.state?.lastWatched ? Date.parse(i.state.lastWatched) : NaN;
+  if (Number.isFinite(lw)) return lw;
+  const m = i._mtime ? Date.parse(i._mtime) : NaN;
+  return Number.isFinite(m) ? m : 0;
+}
+
 function toCard(i: LibraryItem): CwCard {
   const ep = i.type === "movie" ? null : episodeOf(i);
   const duration = i.state?.duration ?? 0;
@@ -74,6 +82,7 @@ function toCard(i: LibraryItem): CwCard {
     episode: ep?.episode,
     videoId: i.state?.video_id,
     progress: duration > 0 ? Math.min(1, offset / duration) : 0,
+    at: watchedAt(i),
   };
 }
 

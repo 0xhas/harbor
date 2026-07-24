@@ -12,6 +12,7 @@ import { externalToKitsu, kitsuToImdb, kitsuToTvdb } from "@/lib/providers/anime
 import { tmdbLocalizedPoster } from "@/lib/providers/tmdb/tmdb-images";
 import { sizeImageUrl, qualityMultiplier } from "@/lib/img-size";
 import { shouldLocalizePosters } from "@/lib/providers/tmdb/tmdb-image-lang";
+import { useProxiedImageSrc } from "@/lib/remote-image-proxy";
 
 type Ratio = "portrait" | "landscape" | "wide";
 
@@ -288,6 +289,10 @@ export function Poster({
   while (cursor < candidates.length && failedRef.current.has(candidates[cursor])) cursor++;
   const current: string | undefined = candidates[cursor];
   const exhausted = cursor >= candidates.length;
+  // Remote plain-HTTP images (e.g. a Suwayomi server on a VPS) are mixed-content
+  // blocked by the WebView; resolve them to a same-origin blob URL.
+  const currentSrc = useProxiedImageSrc(current);
+  const displayedSrc = useProxiedImageSrc(displayed);
 
   useEffect(() => {
     if (exhausted && !firedRef.current) {
@@ -373,9 +378,9 @@ export function Poster({
     >
       <div aria-hidden style={{ paddingTop: ASPECT_PAD[ratio] }} />
       {showShimmer && <span aria-hidden className="harbor-shimmer absolute inset-0" />}
-      {displayed && displayed !== current && (
+      {displayed && displayed !== current && displayedSrc && (
         <img
-          src={displayed}
+          src={displayedSrc}
           alt=""
           aria-hidden
           draggable={false}
@@ -383,11 +388,11 @@ export function Poster({
           className="absolute inset-0 h-full w-full object-cover"
         />
       )}
-      {current && inView && (qMult === 0 || targetPx > 0) && (
+      {current && currentSrc && inView && (qMult === 0 || targetPx > 0) && (
         <img
           key={current}
           ref={handleImgRef}
-          src={current}
+          src={currentSrc}
           alt=""
           draggable={false}
           decoding="async"

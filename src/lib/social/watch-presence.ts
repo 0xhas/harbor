@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import { subscribeActivity, type ActivityState } from "@/lib/discord/presence";
-import { safeFetch } from "@/lib/safe-fetch";
+import { socialPatch } from "./client";
+import { currentAuthor } from "@/lib/theme-auth";
 import { useSettings } from "@/lib/settings";
-import { authToken } from "@/lib/theme-auth";
 
-const ENDPOINT = "https://harbor.site/themes/api/social/me/profile";
 const DEBOUNCE_MS = 2500;
 const HEARTBEAT_MS = 240000;
 
@@ -16,6 +15,8 @@ type WatchingPayload = {
   partySize?: number;
   paused?: boolean;
   startedAt?: number;
+  positionSec?: number;
+  durationSec?: number;
 };
 
 let enabled = false;
@@ -29,6 +30,7 @@ function buildPayload(s: ActivityState): WatchingPayload | null {
   const partySize = s.party ? Math.max(1, s.party.size) : 0;
   if (s.playback) {
     const sub = s.playback.subtitle || (s.playback.year ? String(s.playback.year) : "");
+    const dur = s.playback.durationSec > 0 ? Math.floor(s.playback.durationSec) : 0;
     return {
       kind: partySize ? "party" : "watching",
       title: s.playback.title.slice(0, 120),
@@ -39,6 +41,8 @@ function buildPayload(s: ActivityState): WatchingPayload | null {
           : undefined,
       partySize: partySize || undefined,
       paused: s.playback.paused || undefined,
+      durationSec: dur || undefined,
+      positionSec: dur ? Math.max(0, Math.floor(s.playback.positionSec)) : undefined,
     };
   }
   if (partySize) return { kind: "party", partySize };
@@ -46,13 +50,8 @@ function buildPayload(s: ActivityState): WatchingPayload | null {
 }
 
 async function push(payload: WatchingPayload | null): Promise<void> {
-  const token = authToken();
-  if (!token) return;
-  await safeFetch(ENDPOINT, {
-    method: "PATCH",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ watching: payload }),
-  });
+  if (!currentAuthor()) return;
+  await socialPatch("/social/me/profile", { watching: payload });
 }
 
 function send(force = false): void {

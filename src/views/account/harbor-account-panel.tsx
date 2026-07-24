@@ -7,7 +7,6 @@ import { RecoveryReveal } from "@/views/settings/theme-panel/custom-themes-secti
 import { AccountAuthForm } from "./account-auth-form";
 import { AccountSignedInBar } from "./account-signed-in-bar";
 import { HandleClaimCard } from "./handle-claim-card";
-import { StremioVerifyCard } from "./stremio-verify-card";
 
 export function HarborAccountPanel() {
   const t = useT();
@@ -36,9 +35,6 @@ export function HarborAccountPanel() {
           </div>
           <div className="p-5">
             <HandleClaimCard author={author} />
-          </div>
-          <div className="p-5">
-            <StremioVerifyCard author={author} />
           </div>
         </div>
       )}

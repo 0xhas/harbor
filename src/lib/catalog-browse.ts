@@ -45,11 +45,10 @@ export function browseFetcher(cat: BrowseCatalog, genre: string | null) {
   const extras: CatalogExtra[] | undefined =
     genre && cat.genreExtra ? [{ name: cat.genreExtra, value: genre }] : undefined;
   const cursor = { base: cat.base, type: cat.type, id: cat.id, extras };
-  if (!isCollectionCatalog({ type: cat.type, id: cat.id, name: cat.name })) {
-    return createAddonCatalogFetcher(cursor);
-  }
   const origin = { id: cat.key, name: cat.addonName, logo: cat.addonLogo, base: cat.base };
+  const collection = isCollectionCatalog({ type: cat.type, id: cat.id, name: cat.name });
   return createAddonCatalogFetcher(cursor, {
-    mapMeta: (m) => ({ ...m, addonOrigin: origin, isCollection: true }),
+    mapMeta: (m) =>
+      collection ? { ...m, addonOrigin: origin, isCollection: true } : { ...m, addonOrigin: origin },
   });
 }

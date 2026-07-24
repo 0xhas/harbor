@@ -1,9 +1,9 @@
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-const MAX_BYTES = 2 * 1024 * 1024;
-const MAX_DIM = 2048;
+const MAX_BYTES = 150 * 1024;
+const MAX_DIM = 384;
 const MIN_DIM = 96;
 const PREVIEW_DIM = 512;
-const GIF_UPLOAD_MAX = 8 * 1024 * 1024;
+const GIF_UPLOAD_MAX = 2 * 1024 * 1024;
 const GIF_PREVIEW_MAX = 1024 * 1024;
 
 export type CleanIcon = {

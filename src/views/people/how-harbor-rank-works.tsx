@@ -94,7 +94,7 @@ export function HowHarborRankWorks({
 
         <p className="mt-6 rounded-2xl bg-canvas/60 px-4 py-3 text-[13px] leading-relaxed text-ink-subtle ring-1 ring-edge-soft">
           {t(
-            "All-time body of work, not who is trending. TMDB popularity is a separate tab.",
+            "All-time body of work, not who is trending. Trending and Top on TMDB are the live tabs.",
           )}
         </p>
       </div>

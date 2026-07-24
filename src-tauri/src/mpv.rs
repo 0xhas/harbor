@@ -51,6 +51,7 @@ pub struct MpvStartArgs {
     pub d3d11_flip: Option<bool>,
     pub mac_edr: Option<bool>,
     pub is_live: Option<bool>,
+    pub full_download: Option<bool>,
     pub headers: Option<HashMap<String, String>>,
     pub extra_options: Option<String>,
 }
@@ -646,12 +647,13 @@ pub async fn mpv_start(
         let _ = mpv.set_property("demuxer-lavf-o", "http_seekable=0,http_persistent=0");
         let _ = mpv.set_property("stream-buffer-size", "16MiB");
     } else {
+        let full_dl = args.full_download.unwrap_or(false);
         let _ = mpv.set_property("cache", "yes");
-        let _ = mpv.set_property("cache-secs", "300");
+        let _ = mpv.set_property("cache-secs", if full_dl { "100000" } else { "300" });
         let _ = mpv.set_property("cache-pause", "yes");
-        let _ = mpv.set_property("demuxer-max-bytes", "512MiB");
-        let _ = mpv.set_property("demuxer-max-back-bytes", "64MiB");
-        let _ = mpv.set_property("demuxer-readahead-secs", "300");
+        let _ = mpv.set_property("demuxer-max-bytes", if full_dl { "48GiB" } else { "512MiB" });
+        let _ = mpv.set_property("demuxer-max-back-bytes", if full_dl { "48GiB" } else { "64MiB" });
+        let _ = mpv.set_property("demuxer-readahead-secs", if full_dl { "100000" } else { "300" });
         if let Ok(base) = app.path().app_cache_dir() {
             let dvr = base.join("mpv-cache");
             let _ = std::fs::create_dir_all(&dvr);

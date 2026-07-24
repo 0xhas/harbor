@@ -4,6 +4,7 @@ import { CollectionsRow } from "@/components/collections-row";
 import { CriticsPick } from "@/components/critics-pick";
 import { LazyMount } from "@/components/lazy-mount";
 import { DiscoveryQueueCta } from "@/components/discovery-queue-cta";
+import { TopPeopleCta } from "@/components/top-people-cta";
 import { FeaturedBanner } from "@/components/featured-banner";
 import { AwardTiles } from "@/components/award-tiles";
 import { GenreTiles } from "@/components/genre-tiles";
@@ -358,6 +359,13 @@ export function Discover({ active = true }: { active?: boolean }) {
     () => applyPageRows(railItems, pageRows.custom, false),
     [railItems, pageRows.custom],
   );
+  const peopleCtaIdx = useMemo(() => {
+    let idx = -1;
+    visibleRails.forEach((it, i) => {
+      if (it.key.startsWith("keyword:")) idx = i;
+    });
+    return idx >= 0 ? idx : visibleRails.length - 1;
+  }, [visibleRails]);
   const editRails = useMemo(
     () =>
       applyPageRows(railItems, pageRows.custom, true).filter((item) => {
@@ -552,6 +560,7 @@ export function Discover({ active = true }: { active?: boolean }) {
                     </LazyMount>
                   )}
                   {i === 4 && <AwardTiles />}
+                  {i === peopleCtaIdx && <TopPeopleCta />}
                 </Fragment>
               ))}
         </div>

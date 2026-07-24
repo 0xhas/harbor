@@ -164,6 +164,7 @@ export function FloatingInspector({
           <IconUpload
             currentUrl={config.customIcons?.[selectedId]}
             replaceable={isIconReplaceable(selectedId)}
+            controlId={selectedId}
             states={(() => {
               const list = controlStates(selectedId);
               if (list.length === 0) return undefined;

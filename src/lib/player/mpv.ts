@@ -74,6 +74,7 @@ export type MpvOptions = {
   d3d11Flip?: boolean;
   macEdr?: boolean;
   extraOptions?: string;
+  fullDownload?: boolean;
   getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
 };
 
@@ -380,6 +381,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             d3d11Flip: opts.d3d11Flip === true,
             macEdr: opts.macEdr === true,
             isLive: src.isLive === true,
+            fullDownload: opts.fullDownload === true,
             headers: src.headers ?? null,
             extraOptions: opts.extraOptions || undefined,
           },

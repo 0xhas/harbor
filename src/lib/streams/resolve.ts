@@ -136,7 +136,6 @@ export async function resolveStream(
     }
     const ok = await validateLink(r.data, expectedSize, r.data.headers, signal);
     if (ok) {
-      if (fullDownloadEnabled()) startFullDownload(stream.infoHash.toLowerCase(), r.data.url);
       return { ok: true, data: r.data, via: d.slug };
     }
     dwarn(`[resolve] ${d.slug} returned suspicious link (likely error/downloading video), trying next debrid`);
@@ -235,7 +234,6 @@ export async function resolveViaDebrids(
     }
     const ok = await validateLink(r.data, null, r.data.headers, signal);
     if (ok) {
-      if (fullDownloadEnabled()) startFullDownload(hash.toLowerCase(), r.data.url);
       return { ok: true, data: r.data, via: d.slug };
     }
     tried.push({ slug: d.slug, code: "stub-or-error-video" });

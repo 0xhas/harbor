@@ -1,5 +1,7 @@
 import { Image as ImageIcon, Layers, RotateCcw, Upload } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
+import type { PlayerControlId } from "@/lib/player-chrome";
+import { getIconPresets, presetThumb, type IconPreset } from "@/lib/player-icon-presets";
 
 const MAX_BYTES = 256 * 1024;
 const WARN_BYTES = Math.floor(MAX_BYTES * 0.8);
@@ -15,6 +17,7 @@ export function IconUpload({
   onReset,
   states,
   onApplyToAll,
+  controlId,
 }: {
   currentUrl: string | undefined;
   replaceable: boolean;
@@ -22,6 +25,7 @@ export function IconUpload({
   onReset: (state?: string) => void;
   states?: readonly { id: string; label: string; url: string | undefined }[];
   onApplyToAll?: (dataUrl: string) => void;
+  controlId?: PlayerControlId;
 }) {
   if (!replaceable) {
     return (
@@ -30,17 +34,49 @@ export function IconUpload({
       </span>
     );
   }
-  if (states && states.length > 0) {
-    return (
-      <MultiStateUpload
-        states={states}
-        onUpload={onUpload}
-        onReset={onReset}
-        onApplyToAll={onApplyToAll}
-      />
+  const presets = controlId ? getIconPresets(controlId) : [];
+  const uploadUI =
+    states && states.length > 0 ? (
+      <MultiStateUpload states={states} onUpload={onUpload} onReset={onReset} onApplyToAll={onApplyToAll} />
+    ) : (
+      <SingleUpload currentUrl={currentUrl} onUpload={onUpload} onReset={onReset} />
     );
-  }
-  return <SingleUpload currentUrl={currentUrl} onUpload={onUpload} onReset={onReset} />;
+  if (presets.length === 0) return uploadUI;
+  return (
+    <div className="flex items-center gap-2">
+      <PresetRow presets={presets} onUpload={onUpload} />
+      <span className="h-6 w-px shrink-0 bg-white/10" />
+      {uploadUI}
+    </div>
+  );
+}
+
+function PresetRow({
+  presets,
+  onUpload,
+}: {
+  presets: IconPreset[];
+  onUpload: (dataUrl: string, state?: string) => void;
+}) {
+  const apply = (p: IconPreset) => {
+    for (const [state, url] of Object.entries(p.icons)) onUpload(url, state === "default" ? undefined : state);
+  };
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[9px] uppercase tracking-[0.14em] text-white/40">Preset</span>
+      {presets.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          onClick={() => apply(p)}
+          title={`${p.label} icons`}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/12 bg-white/6 transition-colors hover:border-accent hover:bg-white/12"
+        >
+          <img src={presetThumb(p)} alt={p.label} className="h-5 w-5 object-contain" draggable={false} />
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function SingleUpload({

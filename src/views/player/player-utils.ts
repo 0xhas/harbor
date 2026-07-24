@@ -63,6 +63,7 @@ export async function pickBridge(
     d3d11Flip?: boolean;
     macEdr?: boolean;
     extraOptions?: string;
+    fullDownload?: boolean;
     getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
   },
 ): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {

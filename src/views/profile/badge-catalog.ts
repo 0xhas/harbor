@@ -40,10 +40,10 @@ export function badgeKey(name?: string): string {
 }
 
 export function orderShownBadges<T extends { name: string }>(badges: T[], shown?: string[]): T[] {
-  const visible = badges.filter((b) => badgeKey(b.name) !== "verified");
-  if (!shown || shown.length === 0) return visible;
+  const rest = badges.filter((b) => badgeKey(b.name) !== "verified");
+  if (!shown || shown.length === 0) return rest;
   const byKey = new Map<string, T>();
-  for (const b of visible) {
+  for (const b of rest) {
     const k = badgeKey(b.name);
     if (!byKey.has(k)) byKey.set(k, b);
   }

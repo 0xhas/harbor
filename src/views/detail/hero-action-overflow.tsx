@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Bookmark, Check, Layers, MoreHorizontal, RotateCw, Star, X } from "lucide-react";
+import { ArrowDownToLine, Bookmark, Check, Heart, Layers, MoreHorizontal, RotateCw, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
@@ -188,7 +188,7 @@ export function HeroActionOverflow({
             )}
             <Item
               icon={
-                <Star
+                <Heart
                   size={14}
                   strokeWidth={isFav ? 0 : 2}
                   fill={isFav ? "currentColor" : "none"}

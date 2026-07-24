@@ -90,13 +90,7 @@ export function openUrl(url: string) {
   if (!url) return;
   if (isTauri()) {
     tauriOpenUrl(url).catch(() => {
-      invoke("browser_open", { url }).catch(() => {
-        try {
-          window.open(url, "_blank", "noopener,noreferrer");
-        } catch {
-          /* swallow */
-        }
-      });
+      void invoke("browser_open", { url }).catch(() => {});
     });
     return;
   }

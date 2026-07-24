@@ -69,6 +69,8 @@ import { listMangaProgress } from "@/lib/manga-progress";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { syncProfileStats } from "@/lib/social/stats-sync";
 import { useFeaturedListsSync } from "@/lib/social/use-featured-sync";
+import { useRatingsSync } from "@/lib/social/use-ratings-sync";
+import { useActivitySync } from "@/lib/social/use-activity-sync";
 import { authToken, currentAuthor, refreshToken } from "@/lib/theme-auth";
 import { useAutoDownloadRunner } from "@/lib/auto-download/runner";
 import { RemindersRunner } from "@/lib/reminders-runner";
@@ -353,6 +355,8 @@ export function App({ onReady }: { onReady?: () => void }) {
                       <SessionRefreshRunner />
                       <StatsSyncRunner />
                       <FeaturedListsSyncRunner />
+                      <RatingsSyncRunner />
+                      <ActivitySyncRunner />
                       <AutoDownloadRunner />
                       <RemindersRunner />
                       <MangaTrackingRunner />
@@ -360,6 +364,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                       <RemoteOpenBridge />
                       <GamepadRunner />
                       <DiscordPresence />
+                      <WatchPresenceRunner />
                       <ContextMenu />
                       <AnnouncementGlobal />
                       <WatchLocalModal />
@@ -423,6 +428,16 @@ function AutoDownloadRunner() {
 
 function FeaturedListsSyncRunner() {
   useFeaturedListsSync();
+  return null;
+}
+
+function RatingsSyncRunner() {
+  useRatingsSync();
+  return null;
+}
+
+function ActivitySyncRunner() {
+  useActivitySync();
   return null;
 }
 
@@ -529,6 +544,10 @@ function TogetherLocationPublisher() {
 
 function DiscordPresence() {
   useDiscordPresence();
+  return null;
+}
+
+function WatchPresenceRunner() {
   useWatchShare();
   return null;
 }

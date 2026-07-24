@@ -1,4 +1,4 @@
-import { socialGet, socialPost } from "./client";
+import { socialGet, socialPost, socialPatch } from "./client";
 import { authToken } from "@/lib/theme-auth";
 
 const API = "https://harbor.site/themes/api";
@@ -13,11 +13,15 @@ export type GroupMember = {
   role: "owner" | "member";
 };
 
+export type GroupVisibility = "public" | "invite";
+
 export type Group = {
   id: string;
   name: string;
   description?: string;
   avatarUrl?: string;
+  visibility: GroupVisibility;
+  tags: string[];
   ownerId: string;
   memberCount: number;
   createdAt: string;
@@ -27,14 +31,47 @@ export type Group = {
 
 export type GroupDetail = Group & { members: GroupMember[] };
 
-export function createGroup(name: string, description?: string): Promise<GroupDetail> {
-  return socialPost<GroupDetail>("/social/groups", { name: name.trim(), description: description?.trim() });
+export type DiscoverGroups = { groups: Group[]; topTags: string[]; nextCursor?: string; total: number };
+
+export function createGroup(
+  name: string,
+  opts?: { description?: string; visibility?: GroupVisibility; tags?: string[] },
+): Promise<GroupDetail> {
+  return socialPost<GroupDetail>("/social/groups", {
+    name: name.trim(),
+    description: opts?.description?.trim(),
+    visibility: opts?.visibility,
+    tags: opts?.tags,
+  });
+}
+
+export function editGroup(
+  id: string,
+  patch: { name?: string; description?: string; visibility?: GroupVisibility; tags?: string[] },
+): Promise<GroupDetail> {
+  return socialPatch<GroupDetail>(`/social/groups/${encodeURIComponent(id)}`, patch);
+}
+
+export function fetchPublicGroups(
+  opts: { q?: string; tag?: string; cursor?: string } = {},
+  signal?: AbortSignal,
+): Promise<DiscoverGroups> {
+  const p = new URLSearchParams();
+  if (opts.q) p.set("q", opts.q);
+  if (opts.tag) p.set("tag", opts.tag);
+  if (opts.cursor) p.set("cursor", opts.cursor);
+  const qs = p.toString();
+  return socialGet<DiscoverGroups>(`/social/groups/discover${qs ? `?${qs}` : ""}`, signal);
 }
 
 export function fetchMyGroups(signal?: AbortSignal): Promise<Group[]> {
   return socialGet<{ groups?: Group[] } | Group[]>("/social/groups/mine", signal).then((d) =>
     Array.isArray(d) ? d : d.groups ?? [],
   );
+}
+
+export function fetchUserGroups(handle: string, signal?: AbortSignal): Promise<Group[]> {
+  return socialGet<Group[]>(`/social/groups/user/${encodeURIComponent(handle)}`, signal);
 }
 
 export function fetchGroup(id: string, signal?: AbortSignal): Promise<GroupDetail> {

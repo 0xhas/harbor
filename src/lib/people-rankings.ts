@@ -46,10 +46,12 @@ export function usePeopleRankings({
   source,
   dept,
   country,
+  nonce = 0,
 }: {
   source: RankSource;
   dept: PeopleDept;
   country: string | null;
+  nonce?: number;
 }): PeopleRankState {
   const { settings } = useSettings();
   const rankings = useRankings();
@@ -82,6 +84,12 @@ export function usePeopleRankings({
         return;
       }
 
+      const needsKey = source === "tmdb" || source === "trending";
+      if (!needsKey) {
+        setState({ status: "error", source, people: [], fromCache: false });
+        return;
+      }
+
       if (!settings.tmdbKey) {
         setState({ status: "no-key", source, people: [], fromCache: false });
         return;
@@ -104,7 +112,7 @@ export function usePeopleRankings({
     return () => {
       cancelled = true;
     };
-  }, [source, dept, country, settings.tmdbKey, rankings.ready, rankings.topList]);
+  }, [source, dept, country, nonce, settings.tmdbKey, rankings.ready, rankings.topList]);
 
   return state;
 }

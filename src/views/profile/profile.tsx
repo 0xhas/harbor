@@ -14,6 +14,9 @@ import { FriendsPanel } from "./friends-panel";
 import { GroupsPanel } from "./groups-panel";
 import { SocialsPanel } from "./socials-panel";
 import { AboutCard } from "./about-card";
+import { RatingsCard } from "./ratings-card";
+import { UserRatings } from "@/views/ratings/user-ratings";
+import { WatchNowCard } from "./watch-now-card";
 import { ProfileHero } from "./profile-hero";
 import { ProfileSettings } from "./profile-settings";
 import { ScrollToTop } from "./scroll-to-top";
@@ -46,6 +49,7 @@ export function ProfileView({
   const [editing, setEditing] = useState(false);
   const [pickingLists, setPickingLists] = useState(false);
   const [expanded, setExpanded] = useState<null | "lists" | "badges" | "activity">(null);
+  const [showRatings, setShowRatings] = useState(false);
   const mangaProgress = useMangaProgressList();
   const watchedCount = useWatchedCount();
   const { state, summary, friends, badges, activity, reload, patchSummary } = useProfile(handle);
@@ -121,6 +125,12 @@ export function ProfileView({
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
             <div className="min-w-0 space-y-6">
+              <RatingsCard
+                ratings={summary.ratings}
+                isOwner={summary.isOwner}
+                onViewAll={() => setShowRatings(true)}
+                onOpenMeta={onOpenMeta}
+              />
               <AboutCard
                 description={summary.description}
                 isOwner={summary.isOwner}
@@ -156,8 +166,9 @@ export function ProfileView({
               />
             </div>
             <aside className="lg:sticky lg:top-24 lg:self-start space-y-6">
+              <WatchNowCard watching={summary.watching} />
               <FriendsPanel friends={friends} onOpen={onOpenProfile} isOwner={summary.isOwner} />
-              <GroupsPanel isOwner={summary.isOwner} onOpenProfile={onOpenProfile} />
+              <GroupsPanel isOwner={summary.isOwner} handle={handle} onOpenProfile={onOpenProfile} />
               <SocialsPanel socials={summary.socials} isOwner={summary.isOwner} onSaved={patchSummary} />
             </aside>
           </div>
@@ -181,6 +192,14 @@ export function ProfileView({
               setPickingLists(false);
               reload();
             }}
+          />
+        )}
+        {showRatings && (
+          <UserRatings
+            handle={handle}
+            alias={summary.alias}
+            onOpenMeta={onOpenMeta}
+            onClose={() => setShowRatings(false)}
           />
         )}
       </div>

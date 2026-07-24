@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Check, HardDrive, Layers, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
+import { Check, HardDrive, Heart, Layers, Pencil, Play, Plus, RotateCcw } from "lucide-react";
 import { animeDetails, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { peekAnimeArt, saveAnimeArt } from "@/lib/providers/anime-art-cache";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
@@ -130,6 +130,8 @@ import { useAnimeAnilistDetails } from "./detail/use-anime-anilist-details";
 import { useAnimeCharacters } from "./detail/use-anime-characters";
 import { TraktComments } from "./detail/trakt-comments";
 import { LetterboxdPanel } from "./detail/letterboxd-panel";
+import { RateButton } from "@/components/ratings/rate-button";
+import { ratingTarget } from "@/lib/ratings/types";
 import { LetterboxdReviews } from "./detail/letterboxd-reviews";
 import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
@@ -1096,6 +1098,17 @@ export function DetailView({
       });
     };
     if (!isSeries) {
+      if (meta.type === "other" && cinemetaFull?.videos?.length) {
+        const first = cinemetaFull.videos[0];
+        launch({
+          season: first.season ?? 0,
+          episode: first.episode ?? 1,
+          name: first.name ?? first.title,
+          videoId: first.id,
+          still: first.thumbnail,
+        });
+        return;
+      }
       launch(undefined);
       return;
     }
@@ -1402,6 +1415,14 @@ export function DetailView({
                     type={meta.type === "movie" ? "movie" : "series"}
                   />
                 )}
+                {!liveContext && (
+                  <RateButton
+                    target={ratingTarget(
+                      { id: meta.id, name: title || meta.name, poster: meta.poster ?? detail?.poster },
+                      isAnime ? "anime" : isSeries ? "series" : "movie",
+                    )}
+                  />
+                )}
                 {actionStage >= 1 ? (
                   <HeroActionOverflow
                     meta={meta}
@@ -1464,8 +1485,8 @@ export function DetailView({
                       >
                         <PopIcon
                           active={isFav}
-                          activeIcon={<Star size={20} strokeWidth={0} fill="currentColor" />}
-                          inactiveIcon={<Star size={20} strokeWidth={1.9} fill="none" />}
+                          activeIcon={<Heart size={20} strokeWidth={0} fill="currentColor" />}
+                          inactiveIcon={<Heart size={20} strokeWidth={1.9} fill="none" />}
                         />
                       </button>
                     </HoverTooltip>
@@ -1619,7 +1640,7 @@ export function DetailView({
           !loading &&
           (!detail || detail.seasons.length === 0) &&
           !isAnime &&
-          (isSeries || (addonNative && (meta.type === "channel" || meta.type === "tv"))) &&
+          (isSeries || (addonNative && (meta.type === "channel" || meta.type === "tv" || meta.type === "other"))) &&
           cinemetaFull?.videos &&
           (addonNative
             ? cinemetaFull.videos.length > 0

@@ -10,7 +10,8 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
   const [detail, setDetail] = useState<SportsMatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"summary" | "lineups" | "stats" | "profile">("summary");
-  const isCombat = game.id.includes("|") || game.league === "UFC";
+  const isCombat = game.league === "UFC";
+  const isTennis = game.league === "ATP" || game.league === "WTA";
 
   useEffect(() => {
     let active = true;
@@ -94,7 +95,12 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
 
       {/* Tabs */}
       <div className="mx-auto mt-8 flex w-full max-w-4xl shrink-0 gap-6 border-b border-edge-soft/50 px-6">
-        {(isCombat ? ["summary", "profile", "stats"] as const : ["summary", "lineups", "stats"] as const).map((tId) => (
+        {(isCombat
+          ? (["summary", "profile", "stats"] as const)
+          : isTennis
+            ? (["summary", "stats"] as const)
+            : (["summary", "lineups", "stats"] as const)
+        ).map((tId) => (
           <button
             key={tId}
             onClick={() => setTab(tId)}

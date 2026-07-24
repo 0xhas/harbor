@@ -5,26 +5,13 @@ import { collectionsForTitle } from "@/lib/manga/collections";
 import { hasAnyMangaSource } from "@/lib/manga/sources";
 import { useView } from "@/lib/view";
 
-function collectionBadge(label: string, color: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><circle cx="48" cy="48" r="46" fill="${color}"/><path d="m48 17 7 17 18 1-14 12 5 18-16-10-16 10 5-18-14-12 18-1z" fill="white"/><text x="48" y="84" fill="white" font-family="system-ui,sans-serif" font-size="11" font-weight="700" text-anchor="middle">${label}</text></svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
-
-// Collection artwork is intentionally excluded from the public repository.
-const popularArt = collectionBadge("TOP", "#d97706");
-const acclaimedArt = collectionBadge("BEST", "#7c3aed");
-const expoArt = collectionBadge("EXPO", "#0f766e");
-const eisnerArt = collectionBadge("EISNER", "#1d4ed8");
-const harveyArt = collectionBadge("HARVEY", "#be123c");
-const seiunArt = collectionBadge("SEIUN", "#0369a1");
-
 const BADGE_ART: Record<string, string> = {
-  popular: popularArt,
-  acclaimed: acclaimedArt,
-  "anime-expo": expoArt,
-  eisner: eisnerArt,
-  harvey: harveyArt,
-  seiun: seiunArt,
+  popular: "/awards/most-popular-clean.webp",
+  acclaimed: "/awards/critically-acclaimed.webp",
+  "anime-expo": "/awards/featured-anime-expo.webp",
+  eisner: "/awards/eisner.webp",
+  harvey: "/awards/harvey.webp",
+  seiun: "/awards/seiun.webp",
 };
 
 export function badgeArtFor(id: string): string | undefined {

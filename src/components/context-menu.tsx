@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, ExternalLink, EyeOff, Info, Link2, Magnet, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
+import { ArrowDownToLine, Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, ExternalLink, EyeOff, Heart, Info, Link2, Magnet, Maximize, Navigation, RotateCcw, UserPlus, Wallpaper } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { copyText } from "@/components/player/copy-link-button";
@@ -200,7 +200,7 @@ export function ContextMenu() {
     items.push(
       <Item
         key="favorite"
-        icon={<Star size={14} strokeWidth={2} fill={isFav ? "currentColor" : "none"} />}
+        icon={<Heart size={14} strokeWidth={2} fill={isFav ? "currentColor" : "none"} />}
         label={isFav ? "Favorited" : "Favorite"}
         onClick={() => {
           toggleFavorite({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });

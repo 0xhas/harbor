@@ -100,6 +100,7 @@ export function usePlayerBridge(params: {
           ...generalShaderChain(settings),
         ],
         macEdr: false,
+        fullDownload: settings.torrentFullDownload,
         extraOptions: [mergeMpvOptions(settings, svpOn), shaderCompanionOptions(settings)]
           .filter(Boolean)
           .join("\n"),

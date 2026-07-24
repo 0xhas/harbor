@@ -40,3 +40,22 @@ export async function socialPost<T>(path: string, body?: Record<string, unknown>
   if (r.status === 401 && (await refreshToken())) r = await send();
   return unwrap<T>(r);
 }
+
+export async function socialDelete<T>(path: string): Promise<T> {
+  const send = () => fetch(`${API}${path}`, { method: "DELETE", headers: headers(false) });
+  let r = await send();
+  if (r.status === 401 && (await refreshToken())) r = await send();
+  return unwrap<T>(r);
+}
+
+export async function socialPatch<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+  const send = () =>
+    fetch(`${API}${path}`, {
+      method: "PATCH",
+      headers: headers(!!body),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  let r = await send();
+  if (r.status === 401 && (await refreshToken())) r = await send();
+  return unwrap<T>(r);
+}

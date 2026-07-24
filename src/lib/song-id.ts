@@ -39,13 +39,35 @@ export function isIdentifying(): boolean {
   return busy;
 }
 
-export async function identifyNowPlaying(apiToken: string): Promise<void> {
+export type SongIdOptions = {
+  provider: "audd" | "ai";
+  auddKey: string;
+  aiKey: string;
+  aiModel: string;
+};
+
+function showResult(res: SongResult): void {
+  if (!res) {
+    toast({ kind: "error", title: "Couldn't identify the song" });
+    return;
+  }
+  toast({
+    kind: "result",
+    title: res.title,
+    body: `${res.artist}${res.album ? " · " + res.album : ""}`,
+    art: res.artwork || undefined,
+    href: youtubeSearchUrl(res.artist, res.title),
+  });
+}
+
+export async function identifyNowPlaying(opts: SongIdOptions): Promise<void> {
   if (busy) return;
-  const token = (apiToken ?? "").trim();
-  if (!token) {
+  const useAi = opts.provider === "ai";
+  const key = ((useAi ? opts.aiKey : opts.auddKey) ?? "").trim();
+  if (!key) {
     toast({
       kind: "error",
-      title: "Missing AudD key",
+      title: useAi ? "Missing Gemini API key" : "Missing AudD key",
       body: "Add it in Settings → Library & metadata",
     });
     return;
@@ -53,21 +75,14 @@ export async function identifyNowPlaying(apiToken: string): Promise<void> {
   busy = true;
   toast({ kind: "info", title: "Listening…" });
   try {
-    const res = await invoke<SongResult>("recognize_now_playing", {
-      apiToken: token,
-      seconds: 7,
-    });
-    if (!res) {
-      toast({ kind: "error", title: "Couldn't identify the song" });
-      return;
-    }
-    toast({
-      kind: "result",
-      title: res.title,
-      body: `${res.artist}${res.album ? " · " + res.album : ""}`,
-      art: res.artwork || undefined,
-      href: youtubeSearchUrl(res.artist, res.title),
-    });
+    const res = useAi
+      ? await invoke<SongResult>("recognize_now_playing_ai", {
+          apiKey: key,
+          model: (opts.aiModel ?? "").trim() || null,
+          seconds: 8,
+        })
+      : await invoke<SongResult>("recognize_now_playing", { apiToken: key, seconds: 7 });
+    showResult(res);
   } catch (e) {
     console.error("song-id failed", e);
     toast({ kind: "error", title: "Song identification failed" });

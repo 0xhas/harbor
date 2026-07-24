@@ -1,5 +1,5 @@
-import { SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Pencil, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AnimeGenrePicker } from "@/components/anime-genre-picker";
 import { AnimeHero, AnimeHeroSkeleton } from "@/components/anime-hero";
 import { BackToTop } from "@/components/back-to-top";
@@ -21,8 +21,15 @@ import { AnilistRows } from "./anime/anilist-rows";
 import { MalRows } from "./anime/mal-rows";
 import { useCwAdvance } from "./home/hooks/use-cw-advance";
 import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
-import { AnilistRowControls } from "./anime/anilist-row-controls";
-import { MalRowControls } from "./anime/mal-row-controls";
+import { RowControls } from "./home/row-controls";
+import {
+  applyAnimeRowCustomization,
+  animeEffectiveOrder,
+  animeHasCustomization,
+  animeMoveRow,
+  animeRenameRow,
+  animeToggleHidden,
+} from "@/lib/anime-customization";
 import { AnilistTopRow, AnilistTrendingRow } from "./anime/anilist-top-row";
 import {
   EMPTY_ROW,
@@ -82,6 +89,7 @@ function cleanMeta(m: Meta): Meta {
 export function AnimeView({ active = true }: { active?: boolean }) {
   const t = useT();
   const { settings, update } = useSettings();
+  const [editMode, setEditMode] = useState(false);
   const contentDrag = useContentDrag();
   const [rowsByKey, setRowsByKey] = useState<Record<string, RowState>>(() => {
     const init: Record<string, RowState> = {};
@@ -275,8 +283,6 @@ export function AnimeView({ active = true }: { active?: boolean }) {
 
   const { openGrid } = useView();
   const favoriteGenres = settings.animeFavoriteGenres;
-  const anilistHidden = settings.animeAnilistRowsHidden;
-  const malRowsHidden = settings.animeMalRowsHidden;
   const [showPicker, setShowPicker] = useState(false);
 
   const { authKey } = useAuth();
@@ -456,7 +462,21 @@ export function AnimeView({ active = true }: { active?: boolean }) {
     anilistWatchedMap,
     simklStatusMap,
     animeDetectVer,
+    settings.episodeHiding,
+    settings.animeCwEnd,
   );
+
+  const cwSig = cwItems.map((i) => `${i._id}:${i.state?.season ?? ""}:${i.state?.episode ?? ""}`).join("|");
+  const [cwReady, setCwReady] = useState(false);
+  useEffect(() => {
+    if (cwReady) return;
+    const settle = window.setTimeout(() => setCwReady(true), 150);
+    return () => window.clearTimeout(settle);
+  }, [cwSig, cwReady]);
+  useEffect(() => {
+    const cap = window.setTimeout(() => setCwReady(true), 650);
+    return () => window.clearTimeout(cap);
+  }, []);
 
   useEffect(() => {
     void detectAnimeForCw(libItems);
@@ -823,64 +843,96 @@ export function AnimeView({ active = true }: { active?: boolean }) {
               <AnimeHeroSkeleton />
             </div>
           )}
-          {cwItems.length > 0 && (
-            <Row title={t("Continue Watching")} min={260} shape="landscape" scrollKey="anime:cw">
-              {cwItems.map((item) => (
-                <ContinueCard
-                  key={item._id}
-                  item={item}
-                  onDismiss={(it) => {
-                    if (it.manualWatched) {
-                      dismissManualWatched(it._id);
-                      return;
-                    }
-                    if (it.local) clearLocalCw(it._id);
-                    dismissCw(it, authKey);
-                  }}
-                />
-              ))}
-            </Row>
-          )}
-          {!malRowsHidden.includes("yourMalLists") && <MalRows />}
-          {!anilistHidden.includes("yourLists") && <AnilistRows />}
-          <div className="flex flex-wrap items-center gap-x-7 gap-y-2.5">
-            <AnilistRowControls />
-            <MalRowControls />
+          <div className="flex items-center justify-end gap-2">
+            {editMode && animeHasCustomization(settings.animeRows) && (
+              <button
+                onClick={() => update({ animeRows: { order: [], hidden: [], renamed: {} } })}
+                className="flex h-8 items-center gap-1.5 rounded-md border border-edge-soft/40 bg-canvas/80 px-2.5 text-[12px] font-medium text-ink-muted backdrop-blur-md transition-colors hover:bg-canvas hover:text-ink"
+              >
+                <RotateCcw size={12} strokeWidth={2.2} />
+                {t("Reset")}
+              </button>
+            )}
+            <button
+              onClick={() => setEditMode((v) => !v)}
+              className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium backdrop-blur-md transition-colors ${
+                editMode
+                  ? "border-ink bg-ink text-canvas hover:opacity-90"
+                  : "border-edge-soft/40 bg-canvas/80 text-ink-muted hover:bg-canvas hover:text-ink"
+              }`}
+            >
+              <Pencil size={12} strokeWidth={2.4} />
+              {editMode ? t("Done editing") : t("Customize anime")}
+            </button>
           </div>
-          {!anilistHidden.includes("trending") && <AnilistTrendingRow />}
-          {!anilistHidden.includes("top100") && <AnilistTopRow />}
-          {awardWinnerMetas.length > 0 && (
-            <div data-scroll-anchor="row:anime-awards">
-              <Row title={t("Award Winning Anime")} scrollKey="anime:awards">
-                {awardWinnerMetas.map((m) => (
-                  <PickCard key={m.id} meta={m} awardLookupName={awardLookupByMetaId[m.id]} />
-                ))}
-              </Row>
-            </div>
-          )}
-          {SPECS.map((spec) => {
-            if (spec.key === TOP_PICKS_KEY) return null;
-            const r = filteredRowsByKey[spec.key] ?? EMPTY_ROW;
-            if (r.ready && r.metas.length === 0) return null;
-            const viewAll = () =>
-              openGrid({
-                title: t(spec.title),
-                fetcher: (p) => spec.fetcher(p).then((ms) => ms.map(cleanMeta)),
-                initial: r.metas,
+          {(() => {
+            const rd: { key: string; name: string; node: ReactNode }[] = [];
+            const nameOf = (key: string, fallback: string) => settings.animeRows.renamed[key] ?? fallback;
+            if (cwItems.length > 0) {
+              const nm = nameOf("continueWatching", t("Continue Watching"));
+              rd.push({
+                key: "continueWatching",
+                name: nm,
+                node: cwReady ? (
+                  <Row title={nm} min={260} shape="landscape">
+                    {cwItems.map((item) => (
+                      <ContinueCard
+                        key={item._id}
+                        item={item}
+                        onDismiss={(it) => {
+                          if (it.manualWatched) {
+                            dismissManualWatched(it._id);
+                            return;
+                          }
+                          if (it.local) clearLocalCw(it._id);
+                          dismissCw(it, authKey);
+                        }}
+                      />
+                    ))}
+                  </Row>
+                ) : (
+                  <RowSkeleton title={nm} shape="landscape" />
+                ),
               });
-            return (
-              <div key={spec.key} data-scroll-anchor={`row:${spec.key}`}>
-                {!r.ready ? (
-                  <RowSkeleton
-                    title={
-                      spec.rank
-                        ? t("Top 10 {name}", { name: t(spec.title).replace(/^Top\s*/i, "") })
-                        : t(spec.title)
-                    }
-                  />
+            }
+            rd.push({ key: "yourMalLists", name: nameOf("yourMalLists", t("Your MAL Lists")), node: <MalRows /> });
+            rd.push({ key: "yourAnilistLists", name: nameOf("yourAnilistLists", t("Your Lists")), node: <AnilistRows /> });
+            rd.push({ key: "anilistTrending", name: nameOf("anilistTrending", t("Trending")), node: <AnilistTrendingRow /> });
+            rd.push({ key: "anilistTop100", name: nameOf("anilistTop100", t("Top 100")), node: <AnilistTopRow /> });
+            if (awardWinnerMetas.length > 0) {
+              const nm = nameOf("awards", t("Award Winning Anime"));
+              rd.push({
+                key: "awards",
+                name: nm,
+                node: (
+                  <Row title={nm} scrollKey="anime:awards">
+                    {awardWinnerMetas.map((m) => (
+                      <PickCard key={m.id} meta={m} awardLookupName={awardLookupByMetaId[m.id]} />
+                    ))}
+                  </Row>
+                ),
+              });
+            }
+            for (const spec of SPECS) {
+              if (spec.key === TOP_PICKS_KEY) continue;
+              const r = filteredRowsByKey[spec.key] ?? EMPTY_ROW;
+              if (r.ready && r.metas.length === 0) continue;
+              const specName = nameOf(spec.key, t(spec.title));
+              const rankName = t("Top 10 {name}", { name: specName.replace(/^Top\s*/i, "") });
+              const viewAll = () =>
+                openGrid({
+                  title: t(spec.title),
+                  fetcher: (p) => spec.fetcher(p).then((ms) => ms.map(cleanMeta)),
+                  initial: r.metas,
+                });
+              rd.push({
+                key: spec.key,
+                name: spec.rank ? rankName : specName,
+                node: !r.ready ? (
+                  <RowSkeleton title={spec.rank ? rankName : specName} />
                 ) : spec.rank && r.metas.length >= 10 ? (
                   <Row
-                    title={t("Top 10 {name}", { name: t(spec.title).replace(/^Top\s*/i, "") })}
+                    title={rankName}
                     min={180}
                     shape="rank"
                     scrollKey={`anime:${spec.key}`}
@@ -892,7 +944,7 @@ export function AnimeView({ active = true }: { active?: boolean }) {
                   </Row>
                 ) : (
                   <Row
-                    title={t(spec.title)}
+                    title={specName}
                     scrollKey={`anime:${spec.key}`}
                     onEndReached={r.hasMore ? () => loadMore(spec.key) : undefined}
                     onViewAll={viewAll}
@@ -901,46 +953,76 @@ export function AnimeView({ active = true }: { active?: boolean }) {
                       <PickCard key={`${m.id}-${i}`} meta={m} />
                     ))}
                   </Row>
-                )}
-              </div>
-            );
-          })}
-          {dedupedAddonRows.map((row) => (
-            <div key={row.key} data-scroll-anchor={`row:${row.key}`}>
-              <Row
-                title={row.name}
-                scrollKey={`anime:addon:${row.key}`}
-                onViewAll={
-                  row.more && row.metas.length > 0
-                    ? () => {
-                        const collection = isCollectionCatalog({ type: row.type, id: row.more?.id, name: row.name });
-                        const origin = row.metas[0]?.addonOrigin;
-                        const map =
-                          collection || origin
-                            ? (m: Meta) => ({
-                                ...cleanMeta(m),
-                                ...(origin ? { addonOrigin: origin } : null),
-                                ...(collection ? { isCollection: true } : null),
-                              })
-                            : cleanMeta;
-                        openGrid({
-                          title: row.name,
-                          fetcher: createAddonCatalogFetcher(row.more!, {
-                            initialPageSize: row.metas.length,
-                            mapMeta: map,
-                          }),
-                          initial: row.metas.map(map),
-                        });
-                      }
-                    : undefined
-                }
-              >
-                {row.metas.map((m, i) => (
-                  <PickCard key={`${m.id}-${i}`} meta={cleanMeta(m)} />
-                ))}
-              </Row>
-            </div>
-          ))}
+                ),
+              });
+            }
+            for (const row of dedupedAddonRows) {
+              const addonName = nameOf(`addon:${row.key}`, row.name);
+              rd.push({
+                key: `addon:${row.key}`,
+                name: addonName,
+                node: (
+                  <Row
+                    title={addonName}
+                    scrollKey={`anime:addon:${row.key}`}
+                    onViewAll={
+                      row.more && row.metas.length > 0
+                        ? () => {
+                            const collection = isCollectionCatalog({ type: row.type, id: row.more?.id, name: row.name });
+                            const origin = row.metas[0]?.addonOrigin;
+                            const map =
+                              collection || origin
+                                ? (m: Meta) => ({
+                                    ...cleanMeta(m),
+                                    ...(origin ? { addonOrigin: origin } : null),
+                                    ...(collection ? { isCollection: true } : null),
+                                  })
+                                : cleanMeta;
+                            openGrid({
+                              title: row.name,
+                              fetcher: createAddonCatalogFetcher(row.more!, {
+                                initialPageSize: row.metas.length,
+                                mapMeta: map,
+                              }),
+                              initial: row.metas.map(map),
+                            });
+                          }
+                        : undefined
+                    }
+                  >
+                    {row.metas.map((m, i) => (
+                      <PickCard key={`${m.id}-${i}`} meta={cleanMeta(m)} />
+                    ))}
+                  </Row>
+                ),
+              });
+            }
+            const orderKeys = animeEffectiveOrder(rd, settings.animeRows);
+            const shown = applyAnimeRowCustomization(rd, settings.animeRows, editMode);
+            return shown.map((d) => {
+              const rowHidden = settings.animeRows.hidden.includes(d.key);
+              const idx = orderKeys.indexOf(d.key);
+              return (
+                <div key={d.key} data-scroll-anchor={`row:${d.key}`}>
+                  {editMode && (
+                    <RowControls
+                      name={d.name}
+                      hidden={rowHidden}
+                      canMoveUp={idx > 0}
+                      canMoveDown={idx >= 0 && idx < orderKeys.length - 1}
+                      onMoveUp={() => update({ animeRows: animeMoveRow(settings.animeRows, rd, d.key, -1) })}
+                      onMoveDown={() => update({ animeRows: animeMoveRow(settings.animeRows, rd, d.key, 1) })}
+                      onToggleHidden={() => update({ animeRows: animeToggleHidden(settings.animeRows, d.key) })}
+                      onRename={(label) => update({ animeRows: animeRenameRow(settings.animeRows, d.key, label) })}
+                      onResetName={() => update({ animeRows: animeRenameRow(settings.animeRows, d.key, "") })}
+                      isRenamed={d.key in settings.animeRows.renamed}
+                    />
+                  )}
+                  {!rowHidden && d.node}
+                </div>
+              );
+            });
+          })()}
         </div>
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />

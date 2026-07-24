@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   deleteGroup,
+  editGroup,
   fetchGroup,
   joinGroup,
   leaveGroup,
@@ -10,10 +11,13 @@ import {
   setGroupAvatar,
   type GroupDetail,
   type GroupMember,
+  type GroupVisibility,
 } from "@/lib/social/groups";
 import { useT } from "@/lib/i18n";
 import { Avatar } from "./profile-bits";
 import { fileToWebp } from "./group-image-utils";
+import { GroupTagsInput } from "./group-tags-input";
+import { VisibilityToggle } from "./group-visibility-toggle";
 import { InviteMemberModal } from "./invite-member-modal";
 
 function MemberRow({
@@ -74,7 +78,29 @@ export function GroupDetailModal({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vis, setVis] = useState<GroupVisibility>("invite");
+  const [tags, setTags] = useState<string[]>([]);
+  const [savingSettings, setSavingSettings] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const settingsDirty =
+    !!detail &&
+    (vis !== detail.visibility || tags.join("|") !== detail.tags.join("|"));
+
+  const saveSettings = async () => {
+    if (savingSettings) return;
+    setSavingSettings(true);
+    setError(null);
+    try {
+      const updated = await editGroup(id, { visibility: vis, tags });
+      setDetail(updated);
+      onChanged();
+    } catch (e) {
+      setError((e as Error).message || t("Could not save changes."));
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -89,6 +115,8 @@ export function GroupDetailModal({
       .then((g) => {
         if (ctrl.signal.aborted) return;
         setDetail(g);
+        setVis(g.visibility);
+        setTags(g.tags);
         setPhase("ready");
       })
       .catch(() => {
@@ -236,6 +264,37 @@ export function GroupDetailModal({
           <>
             {detail.description && (
               <p className="px-5 pt-3 text-[13px] leading-relaxed text-ink-muted">{detail.description}</p>
+            )}
+
+            {detail.isOwner ? (
+              <div className="flex flex-col gap-3 px-5 pt-3">
+                <VisibilityToggle value={vis} onChange={setVis} />
+                <GroupTagsInput tags={tags} onChange={setTags} />
+                {settingsDirty && (
+                  <button
+                    onClick={() => void saveSettings()}
+                    disabled={savingSettings}
+                    className="inline-flex min-h-9 items-center gap-2 self-start rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {savingSettings && <Loader2 size={14} className="animate-spin" />} {t("Save changes")}
+                  </button>
+                )}
+              </div>
+            ) : (
+              (detail.visibility === "public" || detail.tags.length > 0) && (
+                <div className="flex flex-wrap items-center gap-1.5 px-5 pt-3">
+                  {detail.visibility === "public" && (
+                    <span className="rounded-full bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted">
+                      {t("Public group")}
+                    </span>
+                  )}
+                  {detail.tags.map((tg) => (
+                    <span key={tg} className="rounded-full bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted">
+                      {tg}
+                    </span>
+                  ))}
+                </div>
+              )
             )}
 
             <div className="mt-3 min-h-0 flex-1 overflow-y-auto px-3 pb-2">

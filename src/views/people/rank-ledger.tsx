@@ -10,17 +10,7 @@ import {
   type ScoreComponents,
   type TopTitle,
 } from "@/lib/harbor-rank";
-
-function titleToMeta(tt: TopTitle): Meta {
-  const type = tt.metaId.includes(":tv:") || tt.metaId.includes(":series:") ? "series" : "movie";
-  return {
-    id: tt.metaId,
-    type,
-    name: tt.title,
-    poster: tt.posterPath ? `https://image.tmdb.org/t/p/w500${tt.posterPath}` : undefined,
-    releaseInfo: tt.year !== null ? String(tt.year) : undefined,
-  };
-}
+import { titleToMeta } from "./people-utils";
 
 type PillarKey = keyof ScoreComponents;
 
@@ -131,7 +121,7 @@ function FullLedger({
               onFocus={() => setInspect(p.key)}
               onBlur={() => setInspect(null)}
               style={{ width: grown ? `${w[p.key]}%` : "0%", transitionDelay: `${i * 30}ms` }}
-              className="group/seg relative h-full shrink-0 outline-none transition-[width] duration-500 ease-out motion-reduce:transition-none"
+              className="group/seg relative h-full shrink-0 outline-none transition-[width] duration-400 ease-out motion-reduce:transition-none"
             >
               <span
                 className={`block h-full w-full transition-colors duration-150 motion-reduce:transition-none group-focus-visible/seg:ring-2 group-focus-visible/seg:ring-inset group-focus-visible/seg:ring-accent ${
@@ -217,7 +207,7 @@ function ReadoutRows({ person }: { person: HarborRankExplanation }) {
           <span className="flex items-baseline gap-2">
             <span className="text-[13px] font-medium text-ink">{t(PILLAR_LABEL[r.key])}</span>
             <span className="text-[12px] text-ink-subtle tabular-nums">
-              {t("{v} · weight {p}%", { v: String(Math.round(r.value)), p: String(weightPct(r.key)) })}
+              {t("{v} · weight {p}%", { v: String(Math.round(r.value * 100)), p: String(weightPct(r.key)) })}
             </span>
           </span>
           <span className="text-end text-[11.5px] text-ink-muted tabular-nums">{r.sub}</span>
@@ -265,21 +255,27 @@ function ProofRow({
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const meta = titleToMeta(title);
   const raw = title.posterPath
     ? `https://image.tmdb.org/t/p/w92${title.posterPath}`
     : undefined;
-  const poster = usePosterChain(settings.rpdbKey, title.metaId, raw);
+  const poster = usePosterChain(
+    settings.rpdbKey,
+    meta.id,
+    raw,
+    meta.type === "series" ? "series" : "movie",
+  );
 
   return (
     <li
       style={{ animationDelay: `${index * 30}ms` }}
-      className="animate-in fade-in slide-in-from-top-1 duration-200 motion-reduce:animate-none"
+      className="animate-in fade-in slide-in-from-top-1 duration-250 motion-reduce:animate-none"
     >
       <button
         type="button"
         onClick={onOpen}
         aria-label={t("Open {title}", { title: title.title })}
-        className="group/proof -mx-2 flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-start outline-none transition-colors hover:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+        className="group/proof -mx-2 flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-start outline-none transition-colors ease-out hover:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
       >
         <span className="h-11 w-[30px] shrink-0 overflow-hidden rounded-md bg-canvas ring-1 ring-edge-soft">
           {poster.src ? (

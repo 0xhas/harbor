@@ -19,14 +19,13 @@ const EMPTY_SIMKL_STATUS: Map<string, WatchlistStatus> = new Map();
 
 function isFinishedSeries(i: LibraryItem): boolean {
   if (i.type !== "series" || !i.state) return false;
-  if ((i.state.flaggedWatched ?? 0) <= 0) return false;
   const dur = i.state.duration ?? 0;
   const off = i.state.timeOffset ?? 0;
-  return dur <= 0 || off / dur >= FINISHED_RATIO;
+  if ((i.state.flaggedWatched ?? 0) > 0) return dur <= 0 || off / dur >= FINISHED_RATIO;
+  return dur > 0 && off / dur >= FINISHED_RATIO;
 }
 
 function currentEpisode(i: LibraryItem): { season: number; episode: number } | null {
-  if (ANIME_ID.test(i._id)) return null;
   const season = i.state?.season;
   const episode = i.state?.episode;
   if (season && episode) return { season, episode };
@@ -95,7 +94,8 @@ function watchedPredicate(
     );
     if (prog.watched) return true;
     if (season === cur.season && episode === cur.episode) return finished;
-    return simklCompleted;
+    if (simklCompleted && (season < cur.season || (season === cur.season && episode < cur.episode))) return true;
+    return false;
   };
 }
 
@@ -134,6 +134,7 @@ export function useCwAdvance(
   simklStatus: Map<string, WatchlistStatus> = EMPTY_SIMKL_STATUS,
   animeVersion = 0,
   episodeHiding = false,
+  animeCwEnd: "hide" | "timer" = "hide",
 ): LibraryItem[] {
   const hideCaughtUp = useSettings().settings.cwHideCaughtUp;
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
@@ -196,6 +197,12 @@ export function useCwAdvance(
             }
             effCur = { season: abs.season, episode: abs.episode };
           }
+          if (!list.some((e) => e.season === effCur.season && e.episode === effCur.episode)) {
+            const mapped = list.find(
+              (e) => e.imdbSeason === effCur.season && e.imdbEpisode === effCur.episode,
+            );
+            if (mapped) effCur = { season: mapped.season, episode: mapped.episode };
+          }
         }
         const watchedCur = watchedPredicate(
           i,
@@ -209,7 +216,11 @@ export function useCwAdvance(
         const nextEp = nextUnwatchedAfter(
           list,
           effCur,
-          watchedPredicate(i, effCur, traktWatched, simklWatched, anilistWatched, simklStatus),
+          (s: number, e: number): boolean => {
+            if (s === effCur.season && e === effCur.episode) return true;
+            const prog = getEpisodeProgress(i._id, s, e, null, null, new Set());
+            return prog.watched;
+          },
           episodeHiding ? (s, e) => isEpisodeHidden(i._id, s, e) : undefined,
         );
         if (nextEp && nextEpAired(list, nextEp, isAnime)) {
@@ -225,6 +236,12 @@ export function useCwAdvance(
             },
             upNext: true,
           });
+        } else if (animeCwEnd === "timer" && nextEp && nextEp.airDate) {
+          next.set(i._id, {
+            ...i,
+            waitingForAir: true as const,
+            nextAirDate: nextEp.airDate,
+          } as LibraryItem);
         } else if (shouldDropFinished(list, fetchOk, i.state, animeMode, effCur, nextEp, hideCaughtUp)) {
           remove.add(i._id);
         }

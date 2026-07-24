@@ -350,6 +350,7 @@ export function FormatBadge({
         userSelect: "none",
         pointerEvents: "none",
         flexShrink: 0,
+        filter: "drop-shadow(0 0 1px rgba(0,0,0,0.55)) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
       }}
       draggable={false}
     />
@@ -374,6 +375,7 @@ export function RuleBadgeChip({ rule, size = "md" }: { rule: CustomBadgeRule; si
           userSelect: "none",
           pointerEvents: "none",
           flexShrink: 0,
+          filter: "drop-shadow(0 0 1px rgba(0,0,0,0.55)) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
         }}
         draggable={false}
       />

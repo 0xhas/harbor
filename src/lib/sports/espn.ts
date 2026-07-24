@@ -217,6 +217,10 @@ async function fetchLeagueRaw(league: string): Promise<SportsGame[]> {
     return parseEvents(events, def);
   }
 
+  // Tennis: don't walk back to old finished tournaments. An empty
+  // "live & upcoming" board is correct when nothing is currently on.
+  if (def.group === "tennis") return [];
+
   // No games today — use the calendar list from the response to find
   // the most recent past matchday and fetch that specific date.
   // Calendar can be either:
@@ -287,6 +291,9 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
   for (const evRaw of events) {
     const ev = evRaw as Record<string, unknown>;
 
+    // Tennis: skip Challenger / ITF / Futures events — only main ATP Tour.
+    if (def.group === "tennis" && /challenger|itf|futures|utr/i.test(String(ev.name ?? ""))) continue;
+
     // Tennis / Golf use "groupings" → each grouping has "competitions"
     // Flatten them into a single competitions list
     const groupings = ev.groupings as { competitions?: unknown[] }[] | undefined;
@@ -303,9 +310,18 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
     const allComps = flatComps.length > 0 ? flatComps : directComps;
     if (allComps.length === 0) continue;
 
-    const compsToProcess = def.group === "combat" ? allComps : [];
+    let compsToProcess: Record<string, unknown>[] =
+      def.group === "combat"
+        ? allComps
+        : def.group === "tennis"
+          ? allComps.filter((c) => {
+              const st = ((c.status as Record<string, unknown>)?.type as Record<string, unknown> | undefined)
+                ?.state;
+              return st === "in" || st === "pre";
+            })
+          : [];
 
-    if (compsToProcess.length === 0) {
+    if (compsToProcess.length === 0 && def.group !== "tennis") {
       // For multi-competition events (NASCAR, F1, Tennis), prefer featured/main event
       // For F1/NASCAR: prioritize Race > Qualifying > Sprint > Practice
       let comp = allComps.find((c) => c.featured === true);
@@ -359,16 +375,27 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
       const awayId = String((away as Record<string, unknown>).id ?? "");
       if (homeId.startsWith("-") && awayId.startsWith("-")) continue;
 
-      const idStr = def.group === "combat" ? `${ev.id}|${comp.id}` : String(ev.id ?? `${def.key}-${out.length}`);
+      const hSide = toSide(home, def.group);
+      const aSide = toSide(away, def.group);
+      // Tennis: only show confirmed matchups (skip unnamed doubles / TBD slots).
+      if (def.group === "tennis") {
+        const bad = (n: string) => !n.trim() || /^tbd$/i.test(n.trim());
+        if (bad(hSide.name) || bad(aSide.name)) continue;
+      }
+
+      const idStr =
+        def.group === "combat" || def.group === "tennis"
+          ? `${ev.id}|${comp.id}`
+          : String(ev.id ?? `${def.key}-${out.length}`);
 
       out.push({
         id: idStr,
         league: def.tag,
         state,
         detail: (t.shortDetail as string) ?? (t.detail as string) ?? "",
-        home: toSide(home, def.group),
-        away: toSide(away, def.group),
-        startMs: Date.parse((ev.date as string) ?? "") || 0,
+        home: hSide,
+        away: aSide,
+        startMs: Date.parse(((comp.date as string) || (ev.date as string)) ?? "") || 0,
       });
     }
   }
@@ -511,6 +538,67 @@ export async function fetchMatchSummary(leagueTag: string, eventId: string): Pro
       events: [],
       homeProfile,
       awayProfile
+    };
+  }
+
+  // Tennis: ids are `${eventId}|${matchId}`. The per-tournament summary endpoint
+  // is not match-addressable, so pull the specific match out of the scoreboard.
+  if (def.group === "tennis" && eventId.includes("|")) {
+    const [evId, cId] = eventId.split("|");
+    const sres = await safeFetch(`${BASE}/${def.path}/scoreboard`);
+    if (!sres.ok) return null;
+    const sdata = await sres.json();
+    const event = (sdata.events || []).find((e: any) => String(e.id) === evId);
+    let comp: any = null;
+    for (const g of event?.groupings || []) {
+      const found = (g.competitions || []).find((c: any) => String(c.id) === cId);
+      if (found) {
+        comp = found;
+        break;
+      }
+    }
+    if (!comp) return null;
+    const cs: any[] = comp.competitors || [];
+    const sorted = [...cs].sort((a, b) => (a.order || 99) - (b.order || 99));
+    const homeRaw = sorted[0];
+    const awayRaw = sorted[1];
+    if (!homeRaw || !awayRaw) return null;
+    const side = (c: any): SportsSide => ({
+      name: c.athlete?.displayName || "",
+      abbr: c.athlete?.shortName || "",
+      logo: c.athlete?.flag?.href || "",
+      score: typeof c.score === "string" ? c.score : String(c.score ?? ""),
+      winner: c.winner === true,
+    });
+    const allStats: MatchTeamStatRow[] = [];
+    const hl: any[] = homeRaw.linescores || [];
+    const al: any[] = awayRaw.linescores || [];
+    const setCount = Math.max(hl.length, al.length);
+    for (let i = 0; i < setCount; i++) {
+      const hv = hl[i]?.value ?? hl[i]?.displayValue;
+      const av = al[i]?.value ?? al[i]?.displayValue;
+      allStats.push({
+        label: `Set ${i + 1}`,
+        homeValue: hv != null ? String(hv) : "-",
+        awayValue: av != null ? String(av) : "-",
+      });
+    }
+    const tp = comp.status?.type || {};
+    const round = comp.round?.displayName || comp.type?.text || "";
+    return {
+      id: eventId,
+      league: def.tag,
+      state: tp.state === "in" || tp.state === "post" ? tp.state : "pre",
+      detail: [round, tp.shortDetail || tp.detail].filter(Boolean).join(" · "),
+      startMs: Date.parse(comp.date || event?.date || "") || 0,
+      home: side(homeRaw),
+      away: side(awayRaw),
+      homeRoster: [],
+      awayRoster: [],
+      homeStats: {},
+      awayStats: {},
+      allStats,
+      events: [],
     };
   }
 

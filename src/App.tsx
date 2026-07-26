@@ -1378,6 +1378,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
                 attempt={picker.attempt}
                 intent={picker.intent}
                 resume={picker.resume}
+                playerActive={playerActive}
               />
             </Suspense>
           </div>

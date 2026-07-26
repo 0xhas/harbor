@@ -140,6 +140,7 @@ export function useCwAdvance(
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
   const [extra, setExtra] = useState<LibraryItem[]>([]);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
   const listCacheRef = useRef<Map<string, PlayEpisode[]>>(new Map());
 
   useEffect(() => {
@@ -150,6 +151,7 @@ export function useCwAdvance(
       return;
     }
     let cancelled = false;
+    let refreshTimeoutId: ReturnType<typeof setTimeout> | undefined;
     const candidates = items.filter((i) => currentEpisode(i) != null && isFinishedSeries(i));
     void (async () => {
       const next = new Map<string, LibraryItem>();
@@ -182,6 +184,7 @@ export function useCwAdvance(
         // its own fully-fetched list actually contains. Ordering key = season*1e5+episode so
         // it holds for both season-relative and absolute numbering. Only fires on a clean
         // fetch with a non-empty list, so a transient/partial fetch never clears a good item.
+        const origCur = cur;
         const orderKey = (s: number, e: number) => s * 100000 + e;
         let effCur = cur;
         if (fetchOk && list.length > 0) {
@@ -224,13 +227,14 @@ export function useCwAdvance(
           episodeHiding ? (s, e) => isEpisodeHidden(i._id, s, e) : undefined,
         );
         if (nextEp && nextEpAired(list, nextEp, isAnime)) {
+          const displaySeason = origCur.season !== effCur.season ? origCur.season : nextEp.season;
           next.set(i._id, {
             ...i,
             state: {
               ...i.state!,
-              season: nextEp.season,
+              season: displaySeason,
               episode: nextEp.episode,
-              video_id: `${i._id}:${nextEp.season}:${nextEp.episode}`,
+              video_id: `${i._id}:${displaySeason}:${nextEp.episode}`,
               timeOffset: 0,
               flaggedWatched: 0,
             },
@@ -276,12 +280,29 @@ export function useCwAdvance(
         setAdvanced((prev) => (sameMap(prev, next) ? prev : next));
         setExtra((prev) => (sameList(prev, extraItems) ? prev : extraItems));
         setRemoved((prev) => (sameSet(prev, remove) ? prev : remove));
+        const timerAirDates: number[] = [];
+        for (const [, item] of next) {
+          const d = (item as Record<string, unknown>).nextAirDate;
+          if (typeof d === "string") {
+            const parsed = Date.parse(d);
+            if (Number.isFinite(parsed)) timerAirDates.push(parsed);
+          }
+        }
+        if (timerAirDates.length > 0) {
+          const now = Date.now();
+          const earliest = Math.min(...timerAirDates);
+          const delay = Math.max(0, earliest - now) + 1000;
+          refreshTimeoutId = setTimeout(() => {
+            if (!cancelled) setRefreshKey((k) => k + 1);
+          }, delay);
+        }
       }
     })();
     return () => {
       cancelled = true;
+      if (refreshTimeoutId !== undefined) clearTimeout(refreshTimeoutId);
     };
-  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus, animeVersion, episodeHiding, hideCaughtUp]);
+  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus, animeVersion, episodeHiding, hideCaughtUp, animeCwEnd, refreshKey]);
 
   if (!enabled) return items;
   const base =

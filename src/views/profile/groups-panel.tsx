@@ -1,11 +1,11 @@
 import { ChevronRight, Plus, UsersRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { fetchMyGroups, fetchUserGroups, type Group } from "@/lib/social/groups";
+import { useView } from "@/lib/view";
+import { fetchGroupInvites, fetchMyGroups, fetchUserGroups, type Group } from "@/lib/social/groups";
 import { CreateGroupModal } from "./create-group-modal";
+import { Avatar } from "@/views/profile/profile-bits";
 import { GroupCard } from "./group-card";
-import { GroupDetailModal } from "./group-detail-modal";
-import { GroupsDiscovery } from "./groups-discovery";
 import { PeopleSearchIcon } from "./people-search-icon";
 
 function FindGroupRow({ onClick }: { onClick: () => void }) {
@@ -27,25 +27,22 @@ function FindGroupRow({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function GroupsPanel({
-  isOwner,
-  handle,
-  onOpenProfile,
-}: {
-  isOwner: boolean;
-  handle: string;
-  onOpenProfile?: (handle: string) => void;
-}) {
+export function GroupsPanel({ isOwner, handle }: { isOwner: boolean; handle: string }) {
   const t = useT();
+  const { openGroup, openGroups } = useView();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [invites, setInvites] = useState<Group[]>([]);
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [createOpen, setCreateOpen] = useState(false);
-  const [discoverOpen, setDiscoverOpen] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(
     (signal?: AbortSignal) => {
       setPhase("loading");
+      if (isOwner) {
+        fetchGroupInvites(signal)
+          .then((list) => !signal?.aborted && setInvites(list))
+          .catch(() => {});
+      }
       const req = isOwner ? fetchMyGroups(signal) : fetchUserGroups(handle, signal);
       req
         .then((list) => {
@@ -86,6 +83,34 @@ export function GroupsPanel({
         )}
       </div>
 
+      {isOwner && invites.length > 0 && (
+        <div className="mb-3 flex flex-col gap-2 rounded-[10px] bg-elevated/60 p-2.5 ring-1 ring-accent/20">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
+            {t("Invites")}
+          </span>
+          <div className={invites.length > 1 ? "flex flex-wrap gap-2" : "flex flex-col gap-1.5"}>
+            {invites.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => openGroup(g.id)}
+                className={`flex min-h-11 items-center gap-2.5 rounded-[8px] px-1.5 py-1 text-start transition-colors hover:bg-raised ${
+                  invites.length > 1 ? "w-[calc(50%-0.25rem)]" : "w-full"
+                }`}
+              >
+                <Avatar src={g.avatarUrl} size={32} alias={g.name} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium text-ink">{g.name}</span>
+                  <span className="block truncate text-[11.5px] text-ink-subtle">
+                    {t("Invited by {name}", { name: g.owner?.alias || g.owner?.handle || "?" })}
+                  </span>
+                </span>
+                <ChevronRight size={16} className="shrink-0 text-ink-subtle" aria-hidden />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {phase === "loading" ? (
         <p className="py-6 text-center text-[13px] text-ink-subtle">{t("Loading groups")}</p>
       ) : phase === "error" ? (
@@ -102,7 +127,7 @@ export function GroupsPanel({
         <div className="flex flex-col items-center gap-2.5 py-6 text-center">
           <p className="text-[13px] text-ink-subtle">{t("Create a group to watch and share together.")}</p>
           <button
-            onClick={() => setDiscoverOpen(true)}
+            onClick={openGroups}
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent transition-opacity hover:opacity-80"
           >
             <PeopleSearchIcon size={15} /> {t("or find a group")}
@@ -111,28 +136,19 @@ export function GroupsPanel({
       ) : (
         <div className="harbor-scroll flex max-h-[380px] flex-col gap-0.5 overflow-y-auto pe-0.5">
           {groups.map((g) => (
-            <GroupCard key={g.id} group={g} onOpen={setOpenId} />
+            <GroupCard key={g.id} group={g} onOpen={openGroup} />
           ))}
-          {isOwner && <FindGroupRow onClick={() => setDiscoverOpen(true)} />}
+          {isOwner && <FindGroupRow onClick={openGroups} />}
         </div>
       )}
 
-      {createOpen && <CreateGroupModal onClose={() => setCreateOpen(false)} onCreated={() => load()} />}
-      {discoverOpen && (
-        <GroupsDiscovery
-          onOpenGroup={(id) => {
-            setDiscoverOpen(false);
-            setOpenId(id);
+      {createOpen && (
+        <CreateGroupModal
+          onClose={() => setCreateOpen(false)}
+          onCreated={(g) => {
+            load();
+            openGroup(g.id);
           }}
-          onClose={() => setDiscoverOpen(false)}
-        />
-      )}
-      {openId && (
-        <GroupDetailModal
-          id={openId}
-          onClose={() => setOpenId(null)}
-          onChanged={() => load()}
-          onOpenProfile={onOpenProfile}
         />
       )}
     </section>

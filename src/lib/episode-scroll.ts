@@ -1,7 +1,7 @@
 export function scrollToDataEp(
   root: HTMLElement | null,
   episode: number,
-  opts: { behavior?: ScrollBehavior; center?: boolean } = {},
+  opts: { behavior?: ScrollBehavior; center?: boolean; epId?: number | null } = {},
 ) {
   const prefersReduced =
     typeof window !== "undefined" &&
@@ -9,7 +9,9 @@ export function scrollToDataEp(
   let tries = 0;
   const tryScroll = () => {
     if (!root) return;
-    const target = root.querySelector<HTMLElement>(`[data-ep="${episode}"]`);
+    const byId =
+      opts.epId != null ? root.querySelector<HTMLElement>(`[data-epid="${opts.epId}"]`) : null;
+    const target = byId ?? root.querySelector<HTMLElement>(`[data-ep="${episode}"]`);
     if (!target) {
       if (tries++ < 30) requestAnimationFrame(tryScroll);
       return;

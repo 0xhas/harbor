@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CoverImg } from "@/components/cover-img";
 import type { MangaSummary } from "@/lib/manga/types";
 import { initials } from "./types";
 
@@ -8,7 +9,7 @@ function Cover({ item }: { item: MangaSummary }) {
   return (
     <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-elevated harbor-card-ring shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65)]">
       {show ? (
-        <img
+        <CoverImg
           src={item.cover}
           alt=""
           loading="lazy"

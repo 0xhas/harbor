@@ -36,6 +36,7 @@ import { simklRequest } from "@/lib/simkl/client";
 import { getLocalCache } from "@/lib/simkl/activities";
 import { aniZipByKitsu, aniZipByMal } from "@/lib/providers/anizip";
 import { useView } from "@/lib/view";
+import { TvCard } from "@/components/tv-card";
 import { useTilt } from "@/lib/use-tilt";
 import { observe } from "@/lib/visibility";
 import { useInWatchlist } from "@/lib/watchlist";
@@ -77,7 +78,7 @@ function getTitleFromKitsu(titles: { en?: string; en_jp?: string; ja_jp?: string
   return null;
 }
 
-export const PickCard = memo(function PickCard({
+const PosterCard = memo(function PosterCard({
   meta,
   flagRerun = false,
   awardLookupName,
@@ -259,7 +260,7 @@ export const PickCard = memo(function PickCard({
       out.push(u);
     }
     return out;
-  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, hydratedPoster, animeImdb, animeTvdb, animeTmdb, localizedPoster, posterPending, pinnedPoster]);
+  }, [settings.rpdbKey, meta.id, posterAltId, meta.poster, meta.background, hydratedPoster, animeImdb, animeTvdb, animeTmdb, localizedPoster, posterPending, pinnedPoster]);
   const posterSrc = posterCandidates[imgIdx];
 
   useEffect(() => {
@@ -487,15 +488,21 @@ export const PickCard = memo(function PickCard({
     settings.awardTabs && isAnimeCardId
       ? (findTopAward(awardLookupName ?? meta.name, awardYear) ?? findTopAward(meta.name, awardYear))
       : null;
-  const awardBelow = (!!animeAwardWin || !!classicWin) && settings.awardTabPosition === "below";
+  const hasAwardWin = !!animeAwardWin || !!classicWin;
+  const awardTop = hasAwardWin && settings.awardTabPosition === "top";
+  const awardBelow = hasAwardWin && settings.awardTabPosition === "below";
 
   return (
     <button
       ref={ref}
       onClick={() => (meta.type === "manga" ? openManga(meta.id) : openMeta(meta, isAnimeCardId ? { exact: true } : undefined))}
       onContextMenu={(e) => openContextMenu(e, { kind: "meta", meta })}
-      onFocus={(e) => hoverPreviewFocus(meta, e.currentTarget)}
-      onBlur={(e) => hoverPreviewBlur(e.currentTarget)}
+      onFocus={(e) => {
+        hoverPreviewFocus(meta, e.currentTarget);
+      }}
+      onBlur={(e) => {
+        hoverPreviewBlur(e.currentTarget);
+      }}
       data-no-card-ring={inCardHover !== "none" || activeCustom ? "" : undefined}
       className="group relative flex w-full min-w-0 flex-col gap-2.5 text-start hover:z-[2]"
     >
@@ -595,10 +602,11 @@ export const PickCard = memo(function PickCard({
             fallbackName={meta.name}
             year={parseAwardYear(meta.releaseInfo)}
             below={awardBelow}
+            top={awardTop}
           />
         )}
         {settings.awardTabs && !isAnimeCardId && (
-          <ClassicAwardTab win={classicWin} below={awardBelow} />
+          <ClassicAwardTab win={classicWin} below={awardBelow} top={awardTop} />
         )}
         {inWatchlist && settings.watchlistBadge !== "off" && (
           <span
@@ -637,16 +645,16 @@ export const PickCard = memo(function PickCard({
         </div>
       </div>
       {!settings.hidePosterTitles && (
-        <p
-          className={
-            kids
-              ? "line-clamp-2 min-h-9 text-[15px] font-bold leading-snug text-[#0e3a43]"
-              : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
-          }
-        >
-          {translatedTitle || meta.name}
-        </p>
-      )}
+          <p
+            className={
+              kids
+                ? "line-clamp-2 min-h-9 text-[15px] font-bold leading-snug text-[#0e3a43]"
+                : "line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-ink"
+            }
+          >
+            {translatedTitle || meta.name}
+          </p>
+        )}
     </button>
   );
 });
@@ -898,11 +906,13 @@ function AnimeAwardTab({
   fallbackName,
   year,
   below = false,
+  top = false,
 }: {
   name: string;
   fallbackName?: string;
   year?: number;
   below?: boolean;
+  top?: boolean;
 }) {
   const primary = findTopAward(name, year);
   const win = primary ?? (fallbackName ? findTopAward(fallbackName, year) : null);
@@ -919,7 +929,7 @@ function AnimeAwardTab({
   return (
     <span
       className={`pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 ${
-        below ? "bottom-1.5" : "bottom-7"
+        top ? "top-1.5" : below ? "bottom-1.5" : "bottom-7"
       }`}
     >
       <AwardTab label={label} />
@@ -993,3 +1003,19 @@ function RerunBadge({ year, dubShift = false }: { year?: string; dubShift?: bool
     </span>
   );
 }
+
+export const PickCard = Object.assign(
+  memo(function PickCard(props: {
+    meta: Meta;
+    flagRerun?: boolean;
+    awardLookupName?: string;
+    kids?: boolean;
+  }) {
+    const { settings } = useSettings();
+    if (settings.rowCardStyle === "tv" && !props.kids && props.meta.type !== "manga") {
+      return <TvCard meta={props.meta} kids={props.kids} />;
+    }
+    return <PosterCard {...props} />;
+  }),
+  { isPosterCard: true as const },
+);

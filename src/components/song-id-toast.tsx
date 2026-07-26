@@ -43,7 +43,11 @@ export function SongIdToast() {
 
   const listening = msg.kind === "info";
   const isResult = msg.kind === "result";
-  const body = showDetails ? msg.body : undefined;
+  const isError = msg.kind === "error";
+  const body = isError || showDetails ? msg.body : undefined;
+  const bodyClass = isError
+    ? "text-[13px] leading-snug text-white/70"
+    : "truncate text-sm text-white/65";
 
   const open = () => {
     if (msg.href) openUrl(msg.href).catch((e) => console.error("open failed", e));
@@ -74,7 +78,7 @@ export function SongIdToast() {
           <Vinyl art={msg.art} size="h-20 w-20" listening={listening} />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="truncate text-lg font-semibold leading-tight">{msg.title}</span>
-            {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
+            {body ? <span className={bodyClass}>{body}</span> : null}
             {isResult ? (
               <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[12px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
                 Open on YouTube
@@ -96,7 +100,7 @@ export function SongIdToast() {
           <Vinyl art={msg.art} size={isResult ? "h-44 w-44" : "h-32 w-32"} listening={listening} />
           <div className="flex w-full min-w-0 flex-col items-center gap-1">
             <span className="truncate text-xl font-bold leading-tight">{msg.title}</span>
-            {body ? <span className="truncate text-sm text-white/65">{body}</span> : null}
+            {body ? <span className={bodyClass}>{body}</span> : null}
             {isResult ? (
               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-[13px] font-semibold text-white/85 transition-colors group-hover:bg-white/16 group-hover:text-white">
                 Open on YouTube

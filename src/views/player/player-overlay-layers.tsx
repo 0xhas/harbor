@@ -1,5 +1,6 @@
 import { memo, type ComponentProps, type RefObject } from "react";
 import { DrawCanvas, StrokesLayer, type Stroke } from "@/components/player/draw-canvas";
+import { cropTransform } from "./hooks/use-video-fill";
 import { StreamSwitcher } from "@/components/player/stream-switcher";
 import { StreamCheckPill } from "@/components/player/stream-check-pill";
 import { AdReportButton } from "@/components/player/ad-report-button";
@@ -58,6 +59,7 @@ export type PlayerOverlayLayersProps = {
   onVolumeWheel: (deltaY: number) => void;
   onVolumeFeedback: (volume: number, muted: boolean) => void;
   isLocalSrc: boolean;
+  sourceFailed: boolean;
   swappingEp: boolean;
   swapResolvingKey: string | null;
   closePlayer: () => void;
@@ -226,6 +228,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         snap={p.snap}
         isLocalSrc={p.isLocalSrc}
         forceShow={p.swappingEp || p.swapResolvingKey != null}
+        sourceFailed={p.sourceFailed}
         onCancel={p.cancelToPicker}
         engineStats={p.engineStats}
         onShowingChange={p.setLoaderShowing}
@@ -234,7 +237,14 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
       />
 
       {!p.pipMode && !p.cast.castDevice && (
-        <StrokesLayer strokes={p.strokes} hideOthers={p.hideOthersDrawings} selfId={p.clientId} />
+        <StrokesLayer
+          strokes={p.strokes}
+          hideOthers={p.hideOthersDrawings}
+          selfId={p.clientId}
+          videoWidth={p.snap.videoWidth}
+          videoHeight={p.snap.videoHeight}
+          transform={cropTransform(p.cropMode ?? "fit")}
+        />
       )}
       {p.drawMode && !p.pipMode && !p.cast.castDevice && p.bridgeRef.current && (
         <DrawCanvas
@@ -244,6 +254,9 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           selfColor={p.selfColor}
           hideOthers={p.hideOthersDrawings}
           strokes={p.strokes}
+          videoWidth={p.snap.videoWidth}
+          videoHeight={p.snap.videoHeight}
+          transform={cropTransform(p.cropMode ?? "fit")}
           onStrokeStart={p.onDrawStart}
           onStrokePoint={p.onDrawPoint}
           onStrokeEnd={p.onDrawEnd}

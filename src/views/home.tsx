@@ -87,6 +87,7 @@ import type { SourceRow } from "@/lib/custom-sources";
 export function Home({ active = true, onReady }: { active?: boolean; onReady?: () => void }) {
   const { authKey, user } = useAuth();
   const { settings, update } = useSettings();
+  const heroFull = settings.heroFull;
   const contentDrag = useContentDrag();
   const t = useT();
   const uiLang = useUiLanguage();
@@ -903,7 +904,10 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
     >
       <ScrollRootContext.Provider value={scrollEl}>
-        <div {...contentDrag} className="relative flex flex-col gap-12">
+        <div
+          {...contentDrag}
+          className="relative flex flex-col gap-12"
+        >
           <div className={tmdbNudgePosition}>
             <div className="pointer-events-auto">
               <TmdbNudge suppress={tmdbProvidedByAddon || settings.homeMode === "classic"} />
@@ -927,7 +931,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
           {settings.homeMode !== "classic" && !homeRowsCustom.hidden.includes("hero") && showHero && (
             <div
               data-scroll-anchor="hero"
-              className={`relative ${settings.heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
+              className={`relative ${heroFull ? "-mt-24 lg:-mt-28 -mb-12 harbor-hero-full" : ""}`}
             >
               {editMode && (
                 <PinnedRowControls
@@ -938,7 +942,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
               )}
               <HeroCarousel
                 slides={shownHeroSlides}
-                full={settings.heroFull}
+                full={heroFull}
                 fullQuality={settings.heroFullQuality}
                 playTrailers={settings.heroTrailers}
               />

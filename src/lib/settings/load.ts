@@ -8,6 +8,17 @@ import {
 import { languageName } from "@/lib/subtitles/language";
 import { sanitizeSeekStep } from "@/lib/seek-step";
 import { migrateModelId, providerTabFor } from "@/lib/ai-models";
+
+const RETIRED_GEMINI = new Set([
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-exp",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-pro",
+  "gemini-pro",
+  "gemini-3-pro-preview",
+]);
 import { DEFAULT, STORAGE_KEY } from "./defaults";
 import type { Settings } from "./types";
 
@@ -108,6 +119,7 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       scrapersAcknowledged?: boolean;
       _scrapersV2?: boolean;
       _animeRowsV1?: boolean;
+      _tennisWtaV1?: boolean;
     };
     if (!parsed._animeRowsV1) {
       const prev = (parsed.animeRows ?? {}) as Partial<Settings["animeRows"]>;
@@ -145,6 +157,15 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
     if (!parsed._streamSortAddonV1) {
       if (parsed.streamSort === "harbor") parsed.streamSort = "addon";
       parsed._streamSortAddonV1 = true;
+    }
+    if (!parsed._tennisWtaV1) {
+      if (Array.isArray(parsed.sportsLeagues) && parsed.sportsLeagues.includes("TENNIS")) {
+        if (!parsed.sportsLeagues.includes("TENNIS_WTA")) parsed.sportsLeagues.push("TENNIS_WTA");
+      }
+      parsed._tennisWtaV1 = true;
+    }
+    if (typeof parsed.songIdAiModel === "string" && RETIRED_GEMINI.has(parsed.songIdAiModel.trim())) {
+      parsed.songIdAiModel = DEFAULT.songIdAiModel;
     }
     if (parsed.aiSearchModel) parsed.aiSearchModel = migrateModelId(parsed.aiSearchModel);
     if (parsed.aiSearchProvider !== "groq" && parsed.aiSearchProvider !== "openrouter") {

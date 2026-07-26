@@ -36,7 +36,7 @@ export function ContentRails({
         const hidden = custom.hidden.includes(key);
         if (hidden && !editMode) return null;
         return (
-          <div key={key} className="flex flex-col gap-3">
+          <div key={key} data-section={key} className="flex scroll-mt-24 flex-col gap-3">
             {editMode && (
               <RailControls
                 label={s.label}

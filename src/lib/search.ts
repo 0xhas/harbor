@@ -48,6 +48,7 @@ export type AnimeHit = {
   malId: number;
   kitsuId?: number;
   anilistId?: number;
+  format: string | null;
   name: string;
   year: string | null;
   poster: string | null;
@@ -111,6 +112,7 @@ export function searchLiveTvChannels(
 
 type JikanAnime = {
   mal_id: number;
+  type?: string | null;
   title?: string;
   title_english?: string;
   year?: number | null;
@@ -134,6 +136,7 @@ async function jikanAnimeSearch(query: string, limit: number): Promise<AnimeHit[
       const name = a.title_english?.trim() || a.title?.trim() || "Untitled";
       return {
         malId: a.mal_id,
+        format: a.type ?? null,
         name,
         year: year ? String(year) : null,
         poster: a.images?.jpg?.large_image_url ?? a.images?.jpg?.image_url ?? null,
@@ -151,6 +154,7 @@ type KitsuSearchDatum = {
   id: string;
   attributes: {
     canonicalTitle?: string;
+    subtype?: string | null;
     titles?: { en?: string | null; en_jp?: string | null };
     startDate?: string | null;
     synopsis?: string | null;
@@ -173,6 +177,7 @@ async function kitsuAnimeSearch(query: string, limit: number): Promise<AnimeHit[
       return {
         malId: 0,
         kitsuId: Number(a.id),
+        format: at.subtype ?? null,
         name: at.titles?.en?.trim() || at.canonicalTitle || "Untitled",
         year: at.startDate ? at.startDate.slice(0, 4) : null,
         poster: at.posterImage?.large ?? at.posterImage?.medium ?? null,
@@ -214,6 +219,7 @@ export async function searchAnime(query: string, limit = 8): Promise<AnimeHit[]>
     push({
       malId: a.malId ?? 0,
       anilistId: a.anilistId,
+      format: a.format,
       name: a.name,
       year: a.year,
       poster: a.poster,

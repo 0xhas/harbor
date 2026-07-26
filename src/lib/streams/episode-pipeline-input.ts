@@ -88,6 +88,7 @@ export function buildEpisodePipelineInput(params: {
     debrids,
     isAnime: animeReq,
     presetStreams: embedded.length > 0 ? embedded : undefined,
+    addonTimeoutMs: Math.max(8, Math.min(120, settings.addonTimeoutSec ?? 30)) * 1000,
     trust: {
       kind: episode ? "series" : meta.type === "series" ? "series" : "movie",
       expectedTitle: meta.name,

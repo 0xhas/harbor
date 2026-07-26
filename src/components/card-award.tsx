@@ -45,12 +45,20 @@ export function useClassicAwardWin(meta: Meta, imdbId?: string): ClassicWin | nu
   }, [live, meta.name, year]);
 }
 
-export function ClassicAwardTab({ win, below }: { win: ClassicWin | null; below?: boolean }) {
+export function ClassicAwardTab({
+  win,
+  below,
+  top,
+}: {
+  win: ClassicWin | null;
+  below?: boolean;
+  top?: boolean;
+}) {
   if (!win) return null;
   return (
     <span
       className={`pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 ${
-        below ? "bottom-1.5" : "bottom-7"
+        top ? "top-1.5" : below ? "bottom-1.5" : "bottom-7"
       }`}
     >
       <AwardTab label={labelFor(win)} />

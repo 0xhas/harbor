@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { suwayomiAuthFor } from "@/lib/manga/sources/suwayomi/auth-registry";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -23,7 +24,11 @@ function base64ToBytes(b64: string): Uint8Array {
 // is refused (https is fine). Route those through the Rust side and hand back a
 // same-origin blob URL. Covers e.g. a Suwayomi server hosted on a VPS over HTTP.
 export function needsImageProxy(url: string): boolean {
-  if (!isTauri || !url.startsWith("http://")) return false;
+  if (!isTauri) return false;
+  // An <img> tag cannot send an Authorization header, so any server behind
+  // basic auth must be fetched through Rust regardless of scheme.
+  if (suwayomiAuthFor(url)) return true;
+  if (!url.startsWith("http://")) return false;
   try {
     const host = new URL(url).hostname.toLowerCase();
     return !(host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".localhost"));
@@ -55,8 +60,15 @@ export function useProxiedImageSrc(url: string | undefined): string | undefined 
     let alive = true;
     (async () => {
       try {
+        const auth = suwayomiAuthFor(url);
         const resp = await invoke<HarborFetchResponse>("harbor_fetch", {
-          args: { url, method: "GET", responseType: "base64", timeoutMs: 30000 },
+          args: {
+            url,
+            method: "GET",
+            responseType: "base64",
+            timeoutMs: 30000,
+            headers: auth ? { authorization: auth } : undefined,
+          },
         });
         if (!resp.ok) throw new Error(`status ${resp.status}`);
         const type = resp.headers?.["content-type"] || resp.contentType || "image/jpeg";

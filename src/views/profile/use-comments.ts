@@ -7,6 +7,7 @@ import { stripUrls, validateComment, type ComposeIssue } from "./text-safety";
 export type CommentsController = {
   state: LoadState;
   comments: Comment[];
+  total: number;
   cursor?: string;
   hasMore: boolean;
   loadMore: () => void;
@@ -20,6 +21,7 @@ export function useComments(handle: string): CommentsController {
   const { authKey } = useAuth();
   const [state, setState] = useState<LoadState>("loading");
   const [comments, setComments] = useState<Comment[]>([]);
+  const [total, setTotal] = useState(0);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(false);
   const [sending, setSending] = useState(false);
@@ -35,6 +37,7 @@ export function useComments(handle: string): CommentsController {
       .then((page) => {
         if (ac.signal.aborted) return;
         setComments(page.comments);
+        setTotal(page.total ?? page.comments.length);
         setCursor(page.nextCursor);
         setHasMore(!!page.nextCursor);
         setState(page.comments.length ? "ready" : "empty");
@@ -47,6 +50,7 @@ export function useComments(handle: string): CommentsController {
     if (!cursor) return;
     void fetchComments(handle, cursor).then((page) => {
       setComments((cur) => [...cur, ...page.comments]);
+      if (typeof page.total === "number") setTotal(page.total);
       setCursor(page.nextCursor);
       setHasMore(!!page.nextCursor);
     });
@@ -100,5 +104,5 @@ export function useComments(handle: string): CommentsController {
     [handle, authKey, comments],
   );
 
-  return { state, comments, cursor, hasMore, loadMore, submit, remove, toggleLike, sending };
+  return { state, comments, total, cursor, hasMore, loadMore, submit, remove, toggleLike, sending };
 }

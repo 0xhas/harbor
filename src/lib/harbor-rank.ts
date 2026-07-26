@@ -73,7 +73,14 @@ export type RankManifest = {
   computedAt: number;
   sources: RankSource[];
   departments: PeopleDept[];
-  countries: Array<{ iso: string; name: string }>;
+  countries: Array<{
+    iso: string;
+    name: string;
+    code?: string | null;
+    depts?: Partial<Record<PeopleDept, number>>;
+    file?: boolean;
+    enough?: boolean;
+  }>;
 };
 
 export type RankListResult =

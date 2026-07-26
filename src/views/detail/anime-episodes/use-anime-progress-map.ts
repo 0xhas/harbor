@@ -99,21 +99,25 @@ export function useAnimeProgressMap({
 
   const progressFor = (ep: KitsuEpisode) => progressById.get(ep.id) ?? NO_PROGRESS;
 
-  const nextUpNum = useMemo(() => {
-    for (const ep of episodes) {
-      if (!progressById.get(ep.id)?.watched) return ep.number;
+  const nextUpEp = useMemo(() => {
+    const scan = displayEpisodes.length > 0 ? displayEpisodes : episodes;
+    for (const ep of scan) {
+      if (!progressById.get(ep.id)?.watched) return ep;
     }
     return null;
-  }, [episodes, progressById]);
+  }, [displayEpisodes, episodes, progressById]);
+
+  const nextUpId = nextUpEp ? nextUpEp.id : null;
+  const nextUpNum = nextUpEp ? nextUpEp.number : null;
 
   const spoilerFor = (ep: KitsuEpisode): SpoilerMask =>
     spoilerMaskFor(settings, {
       watched: progressById.get(ep.id)?.watched ?? false,
-      isNextUp: ep.number === nextUpNum,
+      isNextUp: ep.id === nextUpId,
     });
 
   const allWatched =
     displayEpisodes.length > 0 && displayEpisodes.every((ep) => progressById.get(ep.id)?.watched);
 
-  return { progressFor, nextUpNum, spoilerFor, allWatched };
+  return { progressFor, nextUpNum, nextUpId, spoilerFor, allWatched };
 }

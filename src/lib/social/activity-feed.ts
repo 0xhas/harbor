@@ -4,7 +4,9 @@ import type { CwCard } from "@/lib/continue-watching";
 import type { MediaEntry } from "@/lib/media-list-store";
 import type { MangaFavEntry } from "@/lib/manga-favorites";
 
-export type ActivityKind = "watched" | "finished" | "favorited" | "rated";
+import { wasImported, type ImportReceipt } from "@/lib/ratings/import/receipts";
+
+export type ActivityKind = "watched" | "finished" | "favorited" | "rated" | "imported";
 
 export type ActivityFeedItem = {
   kind: ActivityKind;
@@ -28,8 +30,10 @@ export function buildActivityFeed(input: {
   ratings: MyRating[];
   favorites: MediaEntry[];
   mangaFavorites: MangaFavEntry[];
+  imports?: ImportReceipt[];
 }): ActivityFeedItem[] {
   const items: ActivityFeedItem[] = [];
+  const receipts = input.imports ?? [];
 
   for (const c of input.cw) {
     const finished = c.progress >= 0.9;
@@ -45,6 +49,7 @@ export function buildActivityFeed(input: {
     });
   }
   for (const r of input.ratings) {
+    if (wasImported(r.updatedAt, receipts)) continue;
     items.push({
       kind: "rated",
       metaId: r.itemKey,
@@ -53,6 +58,18 @@ export function buildActivityFeed(input: {
       poster: r.poster,
       at: r.updatedAt,
       rating: r.score,
+    });
+  }
+  for (const imp of receipts) {
+    if (imp.count <= 0) continue;
+    items.push({
+      kind: "imported",
+      metaId: `import:${imp.id}`,
+      mediaType: "movie",
+      title: imp.sourceLabel,
+      subtitle: String(imp.count),
+      at: imp.finishedAt,
+      rating: imp.count,
     });
   }
   for (const f of input.favorites) {

@@ -157,8 +157,19 @@ export function MangaReader({
         void detectWebtoon(urls).then((w) => {
           if (!cancelled) setAutoLong(w);
         });
+        const localResume = resumePageForChapter(pid, manga.id, manga.title, chapter.id, chapter.chapter);
+        const serverResume =
+          typeof chapter.serverPage === "number" && chapter.serverPage > 0 && !chapter.serverRead
+            ? chapter.serverPage
+            : null;
+        const synced =
+          serverResume != null && (localResume == null || serverResume > localResume)
+            ? serverResume
+            : localResume;
         const resumeTo =
-          startPage ?? resumePageForChapter(pid, manga.id, manga.title, chapter.id, chapter.chapter);
+          startPage != null && synced != null
+            ? Math.max(startPage, synced)
+            : (startPage ?? synced);
         const firstLoad = !didSeek.current;
         didSeek.current = true;
         if (firstLoad && (resumeTo != null || startScroll)) {

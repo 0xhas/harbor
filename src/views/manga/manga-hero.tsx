@@ -1,4 +1,5 @@
 import { BookOpen, Star } from "lucide-react";
+import { CoverImg } from "@/components/cover-img";
 import { useEffect, useState } from "react";
 import { usePageVisible } from "@/lib/visibility";
 import { useT } from "@/lib/i18n";
@@ -157,7 +158,7 @@ export function MangaHero({
           aria-label={current.title}
           style={fade}
         >
-          <img
+          <CoverImg
             src={current.cover}
             alt=""
             decoding="async"

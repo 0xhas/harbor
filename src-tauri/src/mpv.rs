@@ -149,6 +149,7 @@ pub struct MpvState {
 
 struct MpvSession {
     mpv: Arc<Mpv>,
+    is_live: bool,
     #[cfg(any(windows, target_os = "linux"))]
     embedded: bool,
 }
@@ -303,6 +304,8 @@ fn apply_pre_init(
     set("audio-client-name", "Harbor");
     set("terminal", "no");
     set("msg-level", "all=warn,vo=v,d3d11=v,gpu=v,win32=v");
+    let is_live = args.is_live.unwrap_or(false);
+    set("ytdl", if is_live { "yes" } else { "no" });
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
     let mut header_fields: Vec<String> = Vec::new();
     if let Some(headers) = &args.headers {
@@ -465,6 +468,37 @@ fn apply_extra_mpv_options(mpv: &Mpv, raw: &str) {
                 key, value, e
             ),
         }
+    }
+}
+
+fn is_local_network_url(url: &str) -> bool {
+    let rest = match url.split_once("://") {
+        Some((_, r)) => r,
+        None => return false,
+    };
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
+    let host = match authority.rsplit_once(':') {
+        Some((h, p)) if !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()) => h,
+        _ => authority,
+    };
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    if host.eq_ignore_ascii_case("localhost") || host == "::1" {
+        return true;
+    }
+    if host.starts_with("127.") || host.starts_with("10.") || host.starts_with("192.168.") {
+        return true;
+    }
+    match host.strip_prefix("172.").and_then(|r| r.split_once('.')) {
+        Some((second, _)) => matches!(second.parse::<u8>(), Ok(n) if (16..=31).contains(&n)),
+        None => false,
+    }
+}
+
+fn network_timeout_for(url: &str) -> &'static str {
+    if is_local_network_url(url) {
+        "600"
+    } else {
+        "60"
     }
 }
 
@@ -662,11 +696,12 @@ pub async fn mpv_start(
             }
         }
         let _ = mpv.set_property("cache-on-disk", "yes");
-        let _ = mpv.set_property("network-timeout", "600");
-        let _ = mpv.set_property(
-            "stream-lavf-o",
-            "reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_on_network_error=1",
-        );
+        let _ = mpv.set_property("network-timeout", network_timeout_for(&args.url));
+        let reconnect_opts = "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_on_http_error=429,reconnect_delay_max=10,reconnect_delay_total_max=60";
+        match mpv.set_property("stream-lavf-o", reconnect_opts) {
+            Ok(()) => eprintln!("[harbor::mpv] stream-lavf-o set {}", reconnect_opts),
+            Err(e) => eprintln!("[harbor::mpv] stream-lavf-o rejected: {:?}", e),
+        }
         let _ = mpv.set_property("stream-buffer-size", "32MiB");
     }
     if want_embed {
@@ -735,6 +770,7 @@ pub async fn mpv_start(
 
     *g = Some(MpvSession {
         mpv: mpv_arc,
+        is_live,
         #[cfg(windows)]
         embedded: embed_hwnd.is_some(),
         #[cfg(target_os = "linux")]
@@ -987,11 +1023,10 @@ fn mpv_node_to_json(node: MpvNode) -> Value {
 
 #[tauri::command]
 pub async fn mpv_command(state: State<'_, MpvState>, cmd: Vec<Value>) -> Result<(), String> {
-    let mpv = {
+    let (mpv, is_live) = {
         let g = state.inner.lock().await;
-        g.as_ref()
-            .map(|s| s.mpv.clone())
-            .ok_or_else(|| "mpv not started".to_string())?
+        let s = g.as_ref().ok_or_else(|| "mpv not started".to_string())?;
+        (s.mpv.clone(), s.is_live)
     };
     if cmd.is_empty() {
         return Err("empty command".into());
@@ -1003,6 +1038,11 @@ pub async fn mpv_command(state: State<'_, MpvState>, cmd: Vec<Value>) -> Result<
         return Err(format!("mpv command not allowed: {}", head));
     }
     let tail: Vec<String> = cmd[1..].iter().map(value_to_arg).collect();
+    if head == "loadfile" && !is_live {
+        if let Some(url) = tail.first() {
+            let _ = mpv.set_property("network-timeout", network_timeout_for(url));
+        }
+    }
     let mut argv: Vec<&str> = Vec::with_capacity(tail.len() + 1);
     argv.push(head);
     for s in &tail {

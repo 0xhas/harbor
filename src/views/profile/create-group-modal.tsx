@@ -57,7 +57,12 @@ export function CreateGroupModal({
     setBusy(true);
     setError(null);
     const created = await createGroup(trimmed, { description, visibility, tags }).catch((e) => {
-      setError((e as Error).message || t("Could not create group."));
+      const code = (e as Error).message;
+      setError(
+        code === "duplicate_name"
+          ? t("You already have a group with this name.")
+          : code || t("Could not create group."),
+      );
       return null;
     });
     if (!created) {

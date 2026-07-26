@@ -21,6 +21,7 @@ import { meta as fetchMeta, type Meta } from "@/lib/cinemeta";
 import { ResultPoster } from "./result-poster";
 import { useView, type PlayerSrc } from "@/lib/view";
 
+import { releaseYear } from "@/lib/release-info";
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 type Mode = "idle" | "starting" | "picking" | "error";
@@ -268,7 +269,7 @@ function pickBestMeta(list: Meta[], title: string, year: number | null): Meta | 
     else if (name.includes(want) || want.includes(name)) score = 30;
     else continue;
     if (year && m.releaseInfo) {
-      const my = Number(m.releaseInfo.slice(0, 4));
+      const my = releaseYear(m.releaseInfo);
       if (my === year) score += 20;
       else if (Number.isFinite(my) && Math.abs(my - year) <= 1) score += 8;
     }

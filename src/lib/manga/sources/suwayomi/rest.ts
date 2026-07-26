@@ -14,6 +14,8 @@ export type RestChapter = {
   uploadDate?: string;
   pageCount: number;
   downloaded: boolean;
+  isRead?: boolean;
+  lastPageRead?: number;
 };
 
 export type RestPage = { items: any[]; hasNextPage: boolean };
@@ -142,6 +144,8 @@ export async function restChapters(client: SuwayomiClient, mangaId: string): Pro
         uploadDate: ch.uploadDate != null ? String(ch.uploadDate) : undefined,
         pageCount: Number.isFinite(Number(ch.pageCount)) ? Number(ch.pageCount) : 0,
         downloaded: !!ch.downloaded,
+        isRead: ch.read === true,
+        lastPageRead: Number.isFinite(Number(ch.lastPageRead)) ? Number(ch.lastPageRead) : undefined,
       };
     });
 }

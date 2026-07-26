@@ -21,6 +21,8 @@ export type MangaChapter = {
   group?: string;
   publishAt?: string;
   downloaded?: boolean;
+  serverRead?: boolean;
+  serverPage?: number;
 };
 
 export type MangaTag = { id: string; name: string; group: string };

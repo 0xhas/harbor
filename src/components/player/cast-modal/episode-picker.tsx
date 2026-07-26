@@ -4,6 +4,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { queueToggle, useQueue } from "@/lib/queue";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
+import { effectiveOrderProvider } from "@/lib/settings/episode-order";
 import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress";
 import { fetchEpisodeList } from "@/lib/series-episodes";
 import type { Episode } from "@/lib/providers/tmdb";
@@ -131,7 +132,7 @@ export function EpisodePicker({
 
   const tvId = meta.id.startsWith("tmdb:tv:") ? parseInt(meta.id.slice(8), 10) || 0 : 0;
   const arc = useArcGroups({ tvId, tmdbKey: settings.tmdbKey, enabled: settings.episodeArcGroups });
-  const orderProvider = settings.tvdbOrderPanel ? "tvdb" : settings.episodeOrderProvider;
+  const orderProvider = effectiveOrderProvider(settings);
   const ordering = useEpisodeOrder(imdbId, meta.id, orderProvider, settings.tvdbSeasonType, settings.tvdbKey);
   const orderTypes = useTvdbSeasonTypes(imdbId, meta.id, settings.tvdbKey, orderProvider === "tvdb");
 

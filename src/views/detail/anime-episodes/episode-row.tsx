@@ -59,6 +59,7 @@ export function AnimeEpisodeRow({
   return (
     <div
       data-ep={ep.number}
+      data-epid={ep.id}
       data-no-card-ring
       onContextMenu={(e) =>
         onContextMenu?.(e, animeSeasonKey(ep), ep.number, progress.watched, ep.sourceMetaId)

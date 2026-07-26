@@ -127,7 +127,7 @@ export function CollectionsView() {
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
       <div className="mx-auto flex w-full max-w-[1700px] flex-col px-12 pb-24">
-        <div className="flex items-center gap-5 pt-24">
+        <div data-tv-chrome-offset className="flex items-center gap-5 pt-24">
           {!layoutHasGlobalBack() && (
             <button
               onClick={goBack}

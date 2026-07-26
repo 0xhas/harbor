@@ -1122,6 +1122,10 @@ html[data-theme-card="stremio"] button.group:not([data-no-card-ring]):hover > .r
   transform: none;
 }
 
+.harbor-lazy-cull {
+  contain-intrinsic-size: auto var(--harbor-cull-min, 240px);
+}
+
 .harbor-custom-hover img {
   transition: transform 0.3s ease-out, filter 0.3s ease-out;
 }
@@ -2224,4 +2228,3 @@ html[data-theme-card="crunch"][dir="rtl"] .harbor-profile-dropdown {
     color: var(--color-ink-subtle);
   }
 }
-

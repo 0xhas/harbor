@@ -26,6 +26,8 @@ import {
 } from "./sources/mangayomi/store";
 import { credentialFreeBase, normalizeSuwayomiBase } from "./sources/suwayomi/base-url";
 import { reconcileSuwayomiServers } from "./sources/suwayomi/server-link";
+import { setSuwayomiBaseResolver } from "./sources/suwayomi/progress-bridge";
+import { makeServer } from "./sources/suwayomi/model";
 
 export type MangaSourceKind = "suwayomi" | "local" | "plugin" | "html" | "mangayomi";
 
@@ -68,7 +70,14 @@ let sourcesMemo: MangaSource[] | null = null;
 
 function notify(): void {
   sourcesMemo = null;
+  warmSuwayomiAuth();
   for (const l of listeners) l();
+}
+
+function warmSuwayomiAuth(): void {
+  for (const s of configuredSources()) {
+    if (s.kind === "suwayomi" && s.baseUrl) makeServer(s.baseUrl);
+  }
 }
 
 function configuredIds(): string[] {
@@ -243,6 +252,13 @@ export function listMangaSources(): MangaSource[] {
 export function hasAnyMangaSource(): boolean {
   return configuredSources().length > 0;
 }
+
+setSuwayomiBaseResolver((sourceId) => {
+  const src = configuredSources().find((s) => s.id === sourceId);
+  return src && src.kind === "suwayomi" && src.baseUrl ? src.baseUrl : null;
+});
+
+warmSuwayomiAuth();
 
 export function isSourceConfigured(id: string): boolean {
   return configuredIds().includes(id);

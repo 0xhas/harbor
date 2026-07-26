@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { currentAuthor, subscribeAuthor } from "@/lib/theme-auth";
 import { useContinueWatching } from "@/lib/continue-watching";
 import { useMyRatings } from "@/lib/ratings/store";
+import { listImports, subscribeImports } from "@/lib/ratings/import/receipts";
 import { useMediaFavorites } from "@/lib/media-favorites";
 import { useMangaFavorites } from "@/lib/manga-favorites";
 import { buildActivityFeed, pushActivity, sameFeed, type ActivityFeedItem } from "./activity-feed";
@@ -13,6 +14,9 @@ export function useActivitySync(): void {
   const ratings = useMyRatings();
   const { items: favMap } = useMediaFavorites();
   const { items: mangaMap } = useMangaFavorites();
+  const [imports, setImports] = useState(listImports);
+
+  useEffect(() => subscribeImports(() => setImports(listImports())), []);
 
   const feed = useMemo<ActivityFeedItem[]>(
     () =>
@@ -21,8 +25,9 @@ export function useActivitySync(): void {
         ratings,
         favorites: [...favMap.values()],
         mangaFavorites: [...mangaMap.values()],
+        imports,
       }),
-    [cw, ratings, favMap, mangaMap],
+    [cw, ratings, favMap, mangaMap, imports],
   );
 
   const lastRef = useRef<ActivityFeedItem[] | null>(null);

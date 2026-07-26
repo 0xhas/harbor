@@ -37,12 +37,15 @@ export type ProfileCounts = {
 export type ProfileWatching = {
   kind: "watching" | "party";
   title?: string;
+  metaId?: string;
+  metaType?: string;
   sub?: string;
   posterUrl?: string;
   partySize?: number;
   paused?: boolean;
   startedAt?: number;
   positionSec?: number;
+  positionAt?: number;
   durationSec?: number;
 };
 
@@ -66,9 +69,12 @@ export type ProfileSummary = {
   counts: ProfileCounts;
   showcase?: ShowcaseItem;
   ratings?: RatingsSummary;
+  cardLayout?: { order?: string[]; hidden?: string[] };
   featuredLists?: FeaturedList[];
   socials?: ResolvedSocial[];
+  audioUrl?: string;
   shownBadges?: string[];
+  hideVerified?: boolean;
   isOwner: boolean;
   friendStatus?: "none" | "friends" | "outgoing" | "incoming" | "blocked";
   friendEdgeId?: string;
@@ -106,7 +112,7 @@ export type Badge = {
   unlockedAt?: string;
 };
 
-export type ActivityKind = "watched" | "finished" | "rated" | "favorited";
+export type ActivityKind = "watched" | "finished" | "rated" | "favorited" | "imported";
 
 export type ActivityItem = {
   id: string;
@@ -133,12 +139,14 @@ export type Comment = {
 };
 
 export type CommentPage = {
+  total?: number;
   comments: Comment[];
   nextCursor?: string;
 };
 
 export type ProfileSettingsInput = {
   alias: string;
+  audioUrl: string;
   description: string;
   location: string;
   customUrl: string;

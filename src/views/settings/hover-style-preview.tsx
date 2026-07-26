@@ -198,12 +198,12 @@ function CustomTile({
 function MarqueeModalPreview({ meta }: { meta: Meta }) {
   const genres = (meta.genres ?? []).slice(0, 2);
   return (
-    <div className="absolute inset-x-2 top-1/2 z-10 -translate-y-1/2 overflow-hidden rounded-md bg-canvas/95 shadow-[0_16px_36px_-12px_rgba(0,0,0,0.8)] ring-1 ring-edge-soft/60 backdrop-blur-md">
+    <div className="absolute inset-x-2 top-1/2 z-10 -translate-y-1/2 overflow-hidden rounded-md bg-elevated shadow-[0_16px_36px_-12px_rgba(0,0,0,0.8)] ring-1 ring-edge-soft">
       <div
         className="relative h-12 w-full bg-cover bg-center"
         style={{ backgroundImage: `url(${meta.background ?? meta.poster ?? ""})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-canvas/85 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-elevated via-elevated/60 to-transparent" />
         <span className="absolute bottom-1 start-1.5 line-clamp-1 max-w-[68%] text-[9px] font-bold text-ink">
           {meta.name}
         </span>

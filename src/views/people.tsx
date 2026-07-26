@@ -17,7 +17,14 @@ import { PeopleHero } from "./people/people-hero";
 import { PeopleJumpIndex, presentBands } from "./people/people-tier-band";
 import { HowHarborRankWorks } from "./people/how-harbor-rank-works";
 
-type Country = { iso: string; name: string };
+type Country = {
+  iso: string;
+  name: string;
+  code?: string | null;
+  depts?: Partial<Record<PeopleDept, number>>;
+  file?: boolean;
+  enough?: boolean;
+};
 type Person = HarborRankExplanation | PersonRankEntry;
 
 type PeopleInit = {
@@ -89,7 +96,17 @@ export function PeopleView({ init }: { init: PeopleInit }) {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const { status, people } = usePeopleRankings({ source, dept, country: null, nonce: reloadNonce });
+  const countryEntry = useMemo(
+    () => (country ? countries.find((c) => c.iso === country) : undefined),
+    [countries, country],
+  );
+  const serverCountry = countryEntry?.file && countryEntry.code ? countryEntry.code.toLowerCase() : null;
+  const { status, people } = usePeopleRankings({
+    source,
+    dept,
+    country: source === "harbor" ? serverCountry : null,
+    nonce: reloadNonce,
+  });
 
   const filtered = useMemo<Person[]>(() => {
     const q = query.trim().toLowerCase();
@@ -97,7 +114,7 @@ export function PeopleView({ init }: { init: PeopleInit }) {
     if (!q && !genre && !country) return all;
     let base = all.filter((p) => {
       if (q && !p.name.toLowerCase().includes(q)) return false;
-      if (country && p.country !== country) return false;
+      if (country && !serverCountry && p.country !== country) return false;
       if (genre) {
         if (p.genreScores) return (p.genreScores[genre] ?? 0) > 0;
         return (p.genres ?? []).includes(genre);

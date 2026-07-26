@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CoverImg } from "@/components/cover-img";
 import {
   ArrowDownToLine,
   Award,
@@ -286,7 +287,7 @@ export function MangaDetail({
       <div className="relative -mx-12 -mt-24 min-h-[360px] overflow-hidden">
         <div className="absolute inset-0 z-0">
           {bannerSrc && (
-            <img
+            <CoverImg
               src={bannerSrc}
               alt=""
               decoding="async"

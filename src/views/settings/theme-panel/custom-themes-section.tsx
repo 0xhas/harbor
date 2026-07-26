@@ -83,11 +83,18 @@ export function CustomThemesSection() {
 
   const entries = useMemo(() => buildEntries(themes), [themes]);
 
-  const activateTheme = (id: string, nav?: ThemePreset["navCustomization"]) =>
+  const activateTheme = (id: string, nav?: ThemePreset["navCustomization"]) => {
+    const next = getThemeById(id);
+    const bg = next?.background;
     update({
-      theme: { ...settings.theme, preset: id as ActiveThemeId },
+      theme: {
+        ...settings.theme,
+        preset: id as ActiveThemeId,
+        ...(bg ? { backgroundImage: bg.image, backgroundDim: bg.dim ?? settings.theme.backgroundDim } : {}),
+      },
       ...(nav ? { navCustomization: nav } : {}),
     });
+  };
 
   const importFile = async (file: File) => {
     setError(null);

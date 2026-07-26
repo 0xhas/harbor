@@ -24,6 +24,23 @@ const FAR_RELEASE_MS = 15000;
 
 export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile";
 
+export const TV_CARD_MIN = 318;
+
+function holdsPosterCards(children: React.ReactNode): boolean {
+  const first = Children.toArray(children)[0];
+  if (!isValidElement(first)) return false;
+  const type = first.type as { isPosterCard?: boolean };
+  if (!type?.isPosterCard) return false;
+  return (first.props as { kids?: boolean; meta?: { type?: string } }).kids !== true;
+}
+
+export function usePosterRow(min = 144, kids = false): { min: number; shape: RowShape } {
+  const { settings } = useSettings();
+  return settings.rowCardStyle === "tv" && !kids
+    ? { min: TV_CARD_MIN, shape: "landscape" }
+    : { min, shape: "portrait" };
+}
+
 const RowTrackContext = createContext<HTMLDivElement | null>(null);
 export const ScrollRootContext = createContext<HTMLElement | null>(null);
 
@@ -131,6 +148,7 @@ export function Row({
   onEndReached,
   onViewAll,
   viewAllLabel = "View all",
+  viewAllClassName = "text-ink-subtle hover:text-ink",
   headerRight,
   titleClassName = "text-ink",
   titleScale = 1,
@@ -147,14 +165,17 @@ export function Row({
   onEndReached?: () => void;
   onViewAll?: () => void;
   viewAllLabel?: string;
+  viewAllClassName?: string;
   headerRight?: React.ReactNode;
   titleClassName?: string;
   titleScale?: number;
 }) {
   const { settings } = useSettings();
   const t = useT();
-  const effMin = Math.max(72, Math.round(min * settings.posterScale));
-  const dockEnabled = shape === "portrait" && settings.posterDockMagnification;
+  const tvCards = shape === "portrait" && settings.rowCardStyle === "tv" && holdsPosterCards(children);
+  const effShape: RowShape = tvCards ? "landscape" : shape;
+  const effMin = Math.max(72, Math.round((tvCards ? TV_CARD_MIN : min) * settings.posterScale));
+  const dockEnabled = effShape === "portrait" && settings.posterDockMagnification;
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [trackEl, setTrackEl] = useState<HTMLDivElement | null>(null);
@@ -537,7 +558,7 @@ export function Row({
                 <button
                   type="button"
                   onClick={onViewAll}
-                  className="group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+                  className={`group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium transition-colors ${viewAllClassName}`}
                 >
                   {t(viewAllLabel)}
                   <ChevronRight
@@ -584,7 +605,7 @@ export function Row({
                 ? (child.props as { style?: { gridColumn?: string } }).style?.gridColumn
                 : undefined;
               return (
-                <LazyChild eager={alwaysActive || i < EAGER_COUNT} shape={shape} span={span}>
+                <LazyChild eager={alwaysActive || i < EAGER_COUNT} shape={effShape} span={span}>
                   {child}
                 </LazyChild>
               );

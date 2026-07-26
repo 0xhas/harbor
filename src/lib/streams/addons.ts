@@ -18,12 +18,13 @@ const SLOW_ADDON_PATTERNS = [
   /torbox/i,
 ];
 
-function timeoutFor(addon: Addon): number {
+function timeoutFor(addon: Addon, ceilingMs: number): number {
   const name = addon.manifest.name ?? "";
   const id = addon.manifest.id ?? "";
   const url = addon.transportUrl ?? "";
   const slow = SLOW_ADDON_PATTERNS.some((re) => re.test(name) || re.test(id) || re.test(url));
-  return slow ? TIMEOUT_MS_SLOW : TIMEOUT_MS_FAST;
+  const base = slow ? TIMEOUT_MS_SLOW : TIMEOUT_MS_FAST;
+  return Math.max(base, ceilingMs);
 }
 
 export type StreamRequest = {
@@ -37,6 +38,7 @@ export async function fetchAddonStreams(
   signal: AbortSignal,
   onPartial?: (current: Stream[]) => void,
   onProgress?: (settled: number, total: number) => void,
+  timeoutMs = TIMEOUT_MS_SLOW,
 ): Promise<Stream[]> {
   const namedTasks: Array<{ name: string; p: Promise<Stream[]> }> = [];
   const skipped: string[] = [];
@@ -56,7 +58,7 @@ export async function fetchAddonStreams(
       const name = ids.length > 1 ? `${addon.manifest.name}[${idScheme(id)}]` : addon.manifest.name;
       namedTasks.push({
         name,
-        p: fetchOne(addon, req.type, id, signal).then((ss) =>
+        p: fetchOne(addon, req.type, id, signal, timeoutMs).then((ss) =>
           ss.map((s, idx) => ({ ...s, addonPriority: priority, addonReturnIdx: idx })),
         ),
       });
@@ -153,10 +155,11 @@ async function fetchOne(
   type: string,
   id: string,
   signal: AbortSignal,
+  timeoutMs: number,
 ): Promise<Stream[]> {
   const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
   const url = `${base}/stream/${type}/${id}.json`;
-  const limit = timeoutFor(addon);
+  const limit = timeoutFor(addon, timeoutMs);
   const ac = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {

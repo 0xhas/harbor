@@ -9,7 +9,7 @@ import { buildTranscodedUrl, probeStremioServer } from "@/lib/stremio-server";
 import type { DebridStore } from "@/lib/debrid/types";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayerSrc, PlayEpisode } from "@/lib/view";
-import { BLACK_SCREEN_GRACE_MS, MAX_AUTORETRY_ATTEMPTS, ROOM_STALL_MS, SLOW_LOAD_MS, STUCK_AUTORETRY_MS } from "../player-utils";
+import { BLACK_SCREEN_GRACE_MS, MAX_AUTORETRY_ATTEMPTS, NEVER_STARTED_CEILING_MS, ROOM_STALL_MS, SLOW_LOAD_MS, STUCK_AUTORETRY_MS } from "../player-utils";
 import { GENUINE_FAILURE_WINDOW_MS, type EngineStats } from "@/lib/torrent/engine-stats";
 
 type OpenPicker = (
@@ -18,20 +18,33 @@ type OpenPicker = (
   opts?: { autoPlay?: boolean; attempt?: number },
 ) => void;
 
-export type SourceError = { status: number; host: string };
+export type SourceError = { status: number; host: string; exhausted?: boolean };
+
+const PROBE_TIMEOUT_MS = 5000;
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
+}
 
 async function probeSourceStatus(url: string, headers?: Record<string, string>): Promise<SourceError> {
-  let host = "";
+  const host = hostOf(url);
+  const ac = new AbortController();
+  const timer = window.setTimeout(() => ac.abort(), PROBE_TIMEOUT_MS);
   try {
-    host = new URL(url).host;
-  } catch {
-    host = "";
-  }
-  try {
-    const res = await fetch(url, { method: "GET", headers: { ...(headers ?? {}), Range: "bytes=0-1" } });
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { ...(headers ?? {}), Range: "bytes=0-1" },
+      signal: ac.signal,
+    });
     return { status: res.status, host };
   } catch {
     return { status: 0, host };
+  } finally {
+    window.clearTimeout(timer);
   }
 }
 
@@ -69,6 +82,7 @@ export function useAutoRetry(params: {
   const hasProgress = usePlaybackFlag(
     () => getPlaybackPosition() > 0.5 || getPlaybackBuffered() > 0.5,
   );
+  const startedPlaying = usePlaybackFlag(() => getPlaybackPosition() > 0.5);
   const [slowLoad, setSlowLoad] = useState(false);
   useEffect(() => {
     setSlowLoad(false);
@@ -143,6 +157,9 @@ export function useAutoRetry(params: {
       const currentAttempt = src.attempt ?? 0;
       if (currentAttempt >= MAX_AUTORETRY_ATTEMPTS) {
         console.warn(`[player] giving up after ${currentAttempt} attempts (${reason})`);
+        if (!isP2pEngine && getPlaybackPosition() < 0.5) {
+          setSourceError((prev) => prev ?? { status: 0, host: hostOf(src.url), exhausted: true });
+        }
         return;
       }
       autoRetriedRef.current = true;
@@ -167,7 +184,7 @@ export function useAutoRetry(params: {
           : { autoPlay: false },
       );
     },
-    [src.attempt, src.meta, src.episode, openPicker, instantPlay, isLocal, isLive, inRoom, src.url, src.subtitles, src.notWebReady, bridgeRef],
+    [src.attempt, src.meta, src.episode, openPicker, instantPlay, isLocal, isLive, inRoom, isP2pEngine, src.url, src.subtitles, src.notWebReady, bridgeRef],
   );
 
   useEffect(() => {
@@ -378,6 +395,23 @@ export function useAutoRetry(params: {
     }, STUCK_AUTORETRY_MS);
     return () => window.clearTimeout(t);
   }, [src.url, snap.durationSec, snap.status, triggerAutoRetry, isP2pEngine, engineFailure]);
+
+  useEffect(() => {
+    if (isLive || isLocal || inRoom || isP2pEngine) return;
+    const remaining = NEVER_STARTED_CEILING_MS - (Date.now() - urlAtRef.current);
+    const t = window.setTimeout(() => {
+      const s = snapRef.current;
+      if (s.status === "playing" || s.status === "ended") return;
+      if (s.durationSec > 0 || getPlaybackPosition() > 0) return;
+      console.warn(`[player] source never started within ${NEVER_STARTED_CEILING_MS}ms`);
+      setSourceError((prev) => prev ?? { status: 0, host: hostOf(src.url) });
+    }, Math.max(0, remaining));
+    return () => window.clearTimeout(t);
+  }, [src.url, isLive, isLocal, inRoom, isP2pEngine]);
+
+  useEffect(() => {
+    if (startedPlaying) setSourceError(null);
+  }, [startedPlaying]);
 
   useEffect(() => {
     if (!inRoom || isLocal || isLive) return;

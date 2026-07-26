@@ -15,6 +15,8 @@ type DiscordConfig = {
 export type PlaybackPresence = {
   title: string;
   subtitle?: string;
+  metaId?: string;
+  metaType?: string;
   posterUrl?: string;
   smallImageUrl?: string;
   year?: string | number;

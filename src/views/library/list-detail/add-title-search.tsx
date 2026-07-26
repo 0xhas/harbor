@@ -8,6 +8,7 @@ import { useSettings } from "@/lib/settings";
 import { emitListToast } from "@/components/lists/list-toast";
 import { Poster } from "@/components/poster";
 
+import { releaseText } from "@/lib/release-info";
 function animeToMeta(a: AnimeHit): Meta {
   return {
     id: a.kitsuId ? `kitsu:${a.kitsuId}` : `mal:${a.malId}`,
@@ -125,7 +126,7 @@ export function AddTitleSearch({ list }: { list: CustomList }) {
                       <span className="truncate text-[13.5px] font-medium text-ink">{m.name}</span>
                       <span className="text-[11.5px] text-ink-subtle">
                         {m.type === "movie" ? t("Movie") : t("Series")}
-                        {m.releaseInfo ? ` · ${m.releaseInfo.slice(0, 4)}` : ""}
+                        {releaseText(m.releaseInfo) ? ` · ${releaseText(m.releaseInfo).slice(0, 4)}` : ""}
                       </span>
                     </span>
                     <span

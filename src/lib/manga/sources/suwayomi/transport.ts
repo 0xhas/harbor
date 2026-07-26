@@ -8,6 +8,7 @@ import {
 } from "./model";
 import { restSourceList, restSourceListOk, restSources } from "./rest";
 import { gqlAvailable, gqlSources } from "./graphql";
+import { registerSuwayomiSourceBase } from "./auth-registry";
 
 export type ServerConfig = { baseUrl: string; auth?: { username: string; password: string } };
 
@@ -68,7 +69,10 @@ export async function withTransportFallback<T>(
 
 export async function loadSources(client: SuwayomiClient, t: Transport): Promise<SuwayomiSource[]> {
   const list = t === "rest" ? await restSources(client) : await gqlSources(client);
-  if (list.length) sourceCache.set(client.server.base, new Map(list.map((s) => [s.id, s])));
+  if (list.length) {
+    sourceCache.set(client.server.base, new Map(list.map((s) => [s.id, s])));
+    for (const s of list) registerSuwayomiSourceBase(s.id, client.server.base);
+  }
   return list;
 }
 

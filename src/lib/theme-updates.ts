@@ -31,6 +31,20 @@ export function getDownloadRecords(): RecMap {
   return read();
 }
 
+export function markStoreThemeUpdated(storeId: string, version: number): void {
+  if (!storeId) return;
+  const m = read();
+  let touched = false;
+  for (const savedId of Object.keys(m)) {
+    const rec = m[savedId];
+    if (rec.storeId === storeId && rec.version < version) {
+      m[savedId] = { ...rec, version };
+      touched = true;
+    }
+  }
+  if (touched) write(m);
+}
+
 export function forgetDownloadedTheme(savedId: string): void {
   const m = read();
   if (m[savedId]) {

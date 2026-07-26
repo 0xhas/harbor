@@ -1,8 +1,12 @@
 import { MessageSquare } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { CommentCompose } from "./comment-compose";
 import { CommentItem } from "./comment-item";
 import { useComments } from "./use-comments";
+
+const COMMENTS_PAGE = 5;
+const COMMENTS_STEP = 12;
 
 export function CommentsSection({
   handle,
@@ -16,12 +20,28 @@ export function CommentsSection({
   onOpenAuthor?: (h: string) => void;
 }) {
   const t = useT();
-  const { state, comments, hasMore, loadMore, submit, remove, toggleLike, sending } = useComments(handle);
+  const { state, comments, total, hasMore, loadMore, submit, remove, toggleLike, sending } = useComments(handle);
+  const [shown, setShown] = useState(COMMENTS_PAGE);
+
+  useEffect(() => {
+    setShown(COMMENTS_PAGE);
+  }, [handle]);
+
+  const visible = comments.slice(0, shown);
+  const hiddenLocal = Math.max(0, comments.length - shown);
+  const canShowMore = hiddenLocal > 0 || hasMore;
+  const nextCount = hiddenLocal > 0 ? Math.min(hiddenLocal, COMMENTS_STEP) : COMMENTS_STEP;
+
+  const showMore = () => {
+    const next = shown + COMMENTS_STEP;
+    setShown(next);
+    if (next >= comments.length && hasMore) loadMore();
+  };
   return (
     <section aria-label={t("Comments")} className="rounded-[14px] bg-surface p-5 ring-1 ring-edge-soft">
       <div className="mb-4 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-subtle">
         <MessageSquare size={20} /> {t("Comments")}
-        {comments.length > 0 && <span className="tabular-nums text-ink-subtle">({comments.length})</span>}
+        {total > 0 && <span className="tabular-nums text-ink-subtle">({total})</span>}
       </div>
 
       <div className="mb-4">
@@ -54,7 +74,7 @@ export function CommentsSection({
 
       {state === "ready" && (
         <div className="flex flex-col gap-1">
-          {comments.map((c) => (
+          {visible.map((c) => (
             <CommentItem
               key={c.id}
               c={c}
@@ -65,12 +85,12 @@ export function CommentsSection({
               onOpenAuthor={onOpenAuthor}
             />
           ))}
-          {hasMore && (
+          {canShowMore && (
             <button
-              onClick={loadMore}
+              onClick={showMore}
               className="mx-auto mt-2 inline-flex min-h-11 items-center rounded-[10px] bg-elevated px-5 text-[13px] font-medium text-ink-muted ring-1 ring-edge-soft transition-colors hover:bg-raised"
             >
-              {t("Load more")}
+              {t("Show {count} more", { count: nextCount })}
             </button>
           )}
         </div>

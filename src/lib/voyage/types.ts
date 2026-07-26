@@ -10,6 +10,8 @@ export type VoyageTheme = {
   backdrop?: string;
 };
 
+export type VoyagePhase = "building" | "sailing";
+
 export type Voyage = {
   id: string;
   themeId: string;
@@ -18,10 +20,17 @@ export type Voyage = {
   accent: string;
   createdAt: number;
   targetLength: number;
+  phase: VoyagePhase;
   pool: Meta[];
   routeIds: string[];
+  playedIds: string[];
   headingIds: string[];
   seen: string[];
+};
+
+export type StoredVoyage = Omit<Voyage, "phase" | "playedIds"> & {
+  phase?: VoyagePhase;
+  playedIds?: string[];
 };
 
 export type VoyageState = {

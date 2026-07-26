@@ -10,14 +10,21 @@ const HEARTBEAT_MS = 240000;
 type WatchingPayload = {
   kind: "watching" | "party";
   title?: string;
+  metaId?: string;
+  metaType?: string;
   sub?: string;
   posterUrl?: string;
   partySize?: number;
   paused?: boolean;
   startedAt?: number;
   positionSec?: number;
+  positionAt?: number;
   durationSec?: number;
 };
+
+function dedupeKey(p: WatchingPayload | null): string {
+  return p ? JSON.stringify(p, (k, v) => (k === "positionAt" ? undefined : v)) : "null";
+}
 
 let enabled = false;
 let current: WatchingPayload | null = null;
@@ -34,6 +41,8 @@ function buildPayload(s: ActivityState): WatchingPayload | null {
     return {
       kind: partySize ? "party" : "watching",
       title: s.playback.title.slice(0, 120),
+      metaId: s.playback.metaId,
+      metaType: s.playback.metaType,
       sub: sub ? sub.slice(0, 60) : undefined,
       posterUrl:
         s.playback.posterUrl && /^https:\/\//i.test(s.playback.posterUrl)
@@ -43,6 +52,7 @@ function buildPayload(s: ActivityState): WatchingPayload | null {
       paused: s.playback.paused || undefined,
       durationSec: dur || undefined,
       positionSec: dur ? Math.max(0, Math.floor(s.playback.positionSec)) : undefined,
+      positionAt: dur ? Date.now() : undefined,
     };
   }
   if (partySize) return { kind: "party", partySize };
@@ -56,7 +66,7 @@ async function push(payload: WatchingPayload | null): Promise<void> {
 
 function send(force = false): void {
   const payload = current ? { ...current, startedAt: startedAt || undefined } : null;
-  const key = JSON.stringify(payload);
+  const key = dedupeKey(payload);
   if (!force && key === lastSentKey) return;
   if (payload === null && !hasShared) {
     lastSentKey = key;

@@ -39,6 +39,8 @@ function mapChapters(
     group: c.scanlator,
     publishAt: c.uploadDate,
     downloaded: c.downloaded,
+    serverRead: c.isRead,
+    serverPage: c.lastPageRead,
   }));
   if (mapped.length > 1 && mapped.every((c) => c.chapter != null)) {
     mapped.sort((a, b) => Number(a.chapter) - Number(b.chapter));

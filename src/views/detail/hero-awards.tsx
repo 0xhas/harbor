@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { AwardLogo, laurelColorFor } from "@/components/icons/award-logo";
 import { Laurel } from "@/components/icons/laurel";
 import { AWARD_CATALOG } from "@/lib/awards-catalog";
+import { scrollToDetailSection } from "@/lib/section-scroll";
 import type { AwardType } from "@/lib/providers/wikidata";
 import { useT } from "@/lib/i18n";
 
@@ -124,7 +125,7 @@ export function HeroAwardsCorner({
       title={lines.join(" · ")}
       onClick={(e) => {
         e.stopPropagation();
-        document.getElementById("awards-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        scrollToDetailSection("awards", "awards-section");
       }}
       className={`group flex items-center gap-3 rounded-2xl px-3 py-2 text-end transition-all duration-200 hover:-translate-y-0.5 hover:bg-canvas/45 ${positionCls}`}
     >

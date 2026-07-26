@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CoverImg } from "@/components/cover-img";
 import { BookOpen, ChevronLeft, FolderOpen, HardDrive, Trash2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import type { MangaChapter } from "@/lib/manga/model";
@@ -155,7 +156,7 @@ export function MangaDownloadsView({
                 className="flex min-w-0 flex-1 items-center gap-4 text-start"
               >
                 {g.cover ? (
-                  <img
+                  <CoverImg
                     src={g.cover}
                     alt=""
                     className="h-16 w-11 shrink-0 rounded-lg object-cover ring-1 ring-edge-soft"

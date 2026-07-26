@@ -1,6 +1,7 @@
 import { Send } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { useAutosize } from "@/lib/use-autosize";
 import { COMMENT_MAX, type ComposeIssue } from "./text-safety";
 
 const ISSUE_TEXT: Record<Exclude<ComposeIssue, null>, string> = {
@@ -23,7 +24,9 @@ export function CommentCompose({
   const t = useT();
   const [text, setText] = useState("");
   const [issue, setIssue] = useState<ComposeIssue>(null);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
   const remaining = COMMENT_MAX - text.length;
+  useAutosize(boxRef, text);
 
   const send = async () => {
     if (sending) return;
@@ -43,6 +46,7 @@ export function CommentCompose({
   return (
     <div className="rounded-[10px] bg-elevated p-2 ring-1 ring-edge-soft focus-within:ring-edge">
       <textarea
+        ref={boxRef}
         value={text}
         onChange={(e) => {
           setText(e.target.value);
@@ -51,10 +55,10 @@ export function CommentCompose({
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void send();
         }}
-        rows={2}
+        rows={1}
         maxLength={COMMENT_MAX + 40}
         placeholder={t("Leave a comment. No links.")}
-        className="w-full resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink outline-none placeholder:text-ink-subtle"
+        className="harbor-scroll min-h-[52px] w-full resize-none bg-transparent px-2 py-1.5 text-[14px] leading-relaxed text-ink outline-none placeholder:text-ink-subtle"
       />
       <div className="flex items-center justify-between gap-3 px-2 pb-1">
         <span className="text-[12px] text-ink-subtle">

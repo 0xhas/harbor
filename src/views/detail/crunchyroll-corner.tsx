@@ -5,6 +5,7 @@ import {
 } from "@/lib/anime-awards";
 import { resolveAwardIcon, useAwardPacks } from "@/lib/award-icons";
 import { useT } from "@/lib/i18n";
+import { scrollToDetailSection } from "@/lib/section-scroll";
 
 const MAX_LINES = 3;
 
@@ -42,9 +43,7 @@ export function CrunchyrollAwardsCorner({
       data-hero-awards
       onClick={(e) => {
         e.stopPropagation();
-        document
-          .getElementById("anime-awards-section")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        scrollToDetailSection("animeAwards", "anime-awards-section");
       }}
       className={`group flex max-w-xs flex-col items-end gap-2 rounded-2xl px-1 py-1 text-end transition-all duration-200 hover:-translate-y-0.5 ${
         inline ? "" : "absolute bottom-14 end-12"

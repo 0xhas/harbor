@@ -1,7 +1,8 @@
 import { searchCinemeta } from "./search";
 import { DEFAULT_AI_MODEL, migrateModelId } from "./ai-models";
 import type { Meta } from "./cinemeta";
-
+
+import { releaseText } from "@/lib/release-info";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MAX_SUGGESTIONS = 12;
@@ -177,7 +178,7 @@ function pickBest(pool: Meta[], suggestion: AiSuggestion): Meta | null {
     if (nameScore === 0) continue;
     let score = nameScore;
     if (suggestion.type && m.type === suggestion.type) score += 1;
-    if (suggestion.year && m.releaseInfo && m.releaseInfo.includes(String(suggestion.year)))
+    if (suggestion.year && releaseText(m.releaseInfo).includes(String(suggestion.year)))
       score += 1;
     if (score > bestScore) {
       bestScore = score;

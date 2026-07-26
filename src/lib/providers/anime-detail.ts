@@ -109,7 +109,7 @@ const STUDIO_ROLE_RANK: Record<string, number> = {
 
 const FRANCHISE_ROLES = new Set(["sequel", "prequel", "parent_story"]);
 const FRANCHISE_MAX_DEPTH = 3;
-const SIDE_ENTRY_SUBTYPES = new Set(["ova", "ona", "special", "music", "movie"]);
+const SIDE_ENTRY_SUBTYPES = new Set(["ova", "ona", "special", "music"]);
 
 function makeFranchiseMeta(id: number, anime: import("./kitsu").KitsuAnimeDetail): Meta {
   return {

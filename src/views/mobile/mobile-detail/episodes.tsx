@@ -8,6 +8,7 @@ import { tmdbSeasonEpisodes, type Episode, type TmdbDetail } from "@/lib/provide
 import { useEpisodeOrder } from "@/views/detail/series-episodes/use-episode-order";
 import { useTvdbSeasonTypes } from "@/views/detail/series-episodes/use-tvdb-season-types";
 import { useSettings } from "@/lib/settings";
+import { effectiveOrderProvider } from "@/lib/settings/episode-order";
 import { getViewedSeason, setViewedSeason } from "@/lib/season-view-pref";
 import { useMobileRemote } from "../mobile-remote";
 import { HIDE_SCROLL, prefersReducedMotion, stillFrom, tmdbTvId, type Ep, type SeasonOption } from "./data";
@@ -57,7 +58,7 @@ export function EpisodeSection({
   const tvdbKey = settings.tvdbKey || snapshot.tvdbKey || "";
   const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
 
-  const settingsProvider = settings.tvdbOrderPanel ? "tvdb" : settings.episodeOrderProvider;
+  const settingsProvider = effectiveOrderProvider(settings);
   const [override, setOverride] = useState<{ provider: "default" | "tvdb"; seasonType: string } | null>(null);
   useEffect(() => {
     setOverride(null);

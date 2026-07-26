@@ -1,4 +1,4 @@
-import { socialGet, socialPost, socialDelete } from "./client";
+import { socialGet, socialPost } from "./client";
 import type { MyRating, PublicRating, RatingCounts, RatingTarget } from "@/lib/ratings/types";
 
 export type RatingInput = RatingTarget & { score: number; review?: string; spoiler?: boolean };
@@ -38,7 +38,7 @@ export async function upsertRating(input: RatingInput): Promise<MyRating> {
 }
 
 export async function deleteRatingRemote(itemKey: string): Promise<void> {
-  await socialDelete(`/social/ratings/${encodeURIComponent(itemKey)}`);
+  await socialPost("/social/ratings/delete", { itemKey });
 }
 
 export async function fetchMyRatings(signal?: AbortSignal): Promise<MyRating[]> {

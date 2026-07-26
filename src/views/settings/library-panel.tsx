@@ -683,9 +683,9 @@ export function LibraryPanel({
               onChange={(v) => update({ showCardBadges: v })}
             />
             <ToggleRow
-              label={t("Award tab across the bottom")}
+              label={t("Award tab on cards")}
               newId="library:award-tab"
-              sub={t("Show a laurel award tab along the bottom of winning titles, like Netflix. Replaces the corner award chip and sits centered so it clears the rating and watchlist pills.")}
+              sub={t("Show a laurel award tab on winning titles, like Netflix. Replaces the corner award chip and sits centered so it clears the rating and watchlist pills. Pick where it sits below.")}
               value={settings.awardTabs}
               onChange={(v) => update({ awardTabs: v })}
             />
@@ -697,8 +697,9 @@ export function LibraryPanel({
                   options={[
                     { value: "above", label: t("Above ratings") },
                     { value: "below", label: t("Below ratings") },
+                    { value: "top", label: t("Top of card") },
                   ]}
-                  onChange={(v) => update({ awardTabPosition: v as "above" | "below" })}
+                  onChange={(v) => update({ awardTabPosition: v as "above" | "below" | "top" })}
                 />
               </div>
             )}

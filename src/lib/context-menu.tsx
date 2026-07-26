@@ -26,6 +26,8 @@ export function ContextMenuProvider({ children }: { children: ReactNode }) {
 
   const open = useCallback((e: React.MouseEvent | MouseEvent, target: ContextMenuTarget) => {
     e.preventDefault();
+    const el = e.target instanceof Element ? e.target : null;
+    if (el?.closest("[data-harbor-no-context-menu]")) return;
     setState({ target, pos: { x: e.clientX, y: e.clientY } });
   }, []);
 

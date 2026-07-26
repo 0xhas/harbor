@@ -1,5 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { socialPatch } from "@/lib/social/client";
+import {
+  CARD_ORDER_DEFAULT,
+  effectiveOrder,
+  moveCard,
+  sanitizeLayout,
+  type CardKey,
+} from "@/lib/profile-card-layout";
+import { ProfileCardControls } from "./profile-card-controls";
+import { useT } from "@/lib/i18n";
 import { useMangaProgressList } from "@/lib/manga-progress";
 import { useWatchedCount } from "@/lib/playback-history";
 import { pushStats, useLibraryWatchedCount } from "@/lib/social/stats-sync";
@@ -16,7 +27,9 @@ import { SocialsPanel } from "./socials-panel";
 import { AboutCard } from "./about-card";
 import { RatingsCard } from "./ratings-card";
 import { UserRatings } from "@/views/ratings/user-ratings";
+import { ImportModal } from "@/views/ratings/import/import-modal";
 import { WatchNowCard } from "./watch-now-card";
+import { ProfileAudioCard } from "./profile-audio-card";
 import { ProfileHero } from "./profile-hero";
 import { ProfileSettings } from "./profile-settings";
 import { ScrollToTop } from "./scroll-to-top";
@@ -42,6 +55,7 @@ export function ProfileView({
   onOpenMeta?: (metaId: string, kind?: string, hint?: { name?: string; poster?: string }) => void;
 }) {
   const { goBack } = useView();
+  const t = useT();
   const { authKey, user } = useAuth();
   const { activeProfile } = useProfiles();
   const { settings } = useSettings();
@@ -50,6 +64,8 @@ export function ProfileView({
   const [pickingLists, setPickingLists] = useState(false);
   const [expanded, setExpanded] = useState<null | "lists" | "badges" | "activity">(null);
   const [showRatings, setShowRatings] = useState(false);
+  const [importingRatings, setImportingRatings] = useState(false);
+  const [arranging, setArranging] = useState(false);
   const mangaProgress = useMangaProgressList();
   const watchedCount = useWatchedCount();
   const { state, summary, friends, badges, activity, reload, patchSummary } = useProfile(handle);
@@ -85,14 +101,86 @@ export function ProfileView({
   const watchedOverride = summary.isOwner ? Math.max(watchedCount, libWatched, summary.counts.watched) : undefined;
 
   if (editing && summary.isOwner) {
-    return <ProfileSettings summary={summary} badges={badges} onClose={() => setEditing(false)} onSaved={patchSummary} />;
+    return (
+      <ProfileSettings
+        summary={summary}
+        badges={badges}
+        onClose={() => setEditing(false)}
+        onSaved={patchSummary}
+        onArrange={() => {
+          setEditing(false);
+          setArranging(true);
+        }}
+      />
+    );
   }
 
   const c = resolveCustomization(summary);
 
+  const layout = sanitizeLayout(summary.cardLayout);
+  const hiddenSet = new Set(layout.hidden ?? []);
+  const applyLayout = (order: CardKey[], hidden: string[]) => {
+    const next = { order, hidden };
+    patchSummary({ ...summary, cardLayout: next });
+    void socialPatch("/social/me/profile", { cardLayout: next }).catch(() => {});
+  };
+  const cardNodes: Partial<Record<CardKey, ReactNode>> = {
+    about: (
+      <AboutCard
+        description={summary.description}
+        isOwner={summary.isOwner}
+        userFont={c.font}
+        onEdit={() => setEditing(true)}
+      />
+    ),
+    ratings: (
+      <RatingsCard
+        ratings={summary.ratings}
+        isOwner={summary.isOwner}
+        onViewAll={() => setShowRatings(true)}
+        onImport={summary.isOwner ? () => setImportingRatings(true) : undefined}
+        onOpenMeta={onOpenMeta}
+      />
+    ),
+    canvas: c.hasCanvas ? (
+      <CanvasCard html={c.html} css={c.css} height={c.height} hiddenFromVisitors={c.hiddenFromVisitors} />
+    ) : undefined,
+    showcase: (
+      <Showcase item={summary.showcase} onOpen={onOpenMeta} isOwner={summary.isOwner} onCleared={patchSummary} />
+    ),
+    lists: (
+      <MyListsShowcase
+        lists={summary.featuredLists ?? []}
+        isOwner={summary.isOwner}
+        signedIn={viewerSignedIn}
+        onOpenMeta={onOpenMeta}
+        onViewAll={() => setExpanded("lists")}
+        onManage={() => setPickingLists(true)}
+        handle={handle}
+      />
+    ),
+    badges: <BadgesRow badges={badges} onViewAll={() => setExpanded("badges")} handle={handle} />,
+    activity: (
+      <RecentActivity
+        items={summary.isOwner || summary.activityPublic ? activity : []}
+        onOpen={onOpenMeta}
+        onViewAll={() => setExpanded("activity")}
+        handle={handle}
+        visibilityPrivate={!summary.isOwner && !summary.activityPublic}
+        onOpenRatings={() => setShowRatings(true)}
+      />
+    ),
+    comments: (
+      <CommentsSection handle={handle} isOwner={summary.isOwner} signedIn={!!authKey} onOpenAuthor={onOpenProfile} />
+    ),
+  };
+  const presentCards = CARD_ORDER_DEFAULT.filter((k) => cardNodes[k] != null);
+  const orderedCards = effectiveOrder(layout, presentCards);
+
   return (
     <div
       ref={scrollRef}
+      data-harbor-no-context-menu
       className="h-full overflow-y-auto"
       style={c.background ? { background: c.background } : undefined}
     >
@@ -125,50 +213,36 @@ export function ProfileView({
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
             <div className="min-w-0 space-y-6">
-              <RatingsCard
-                ratings={summary.ratings}
-                isOwner={summary.isOwner}
-                onViewAll={() => setShowRatings(true)}
-                onOpenMeta={onOpenMeta}
-              />
-              <AboutCard
-                description={summary.description}
-                isOwner={summary.isOwner}
-                userFont={c.font}
-                onEdit={() => setEditing(true)}
-              />
-              {c.hasCanvas && (
-                <CanvasCard html={c.html} css={c.css} height={c.height} hiddenFromVisitors={c.hiddenFromVisitors} />
-              )}
-              <Showcase item={summary.showcase} onOpen={onOpenMeta} isOwner={summary.isOwner} onCleared={patchSummary} />
-              <MyListsShowcase
-                lists={summary.featuredLists ?? []}
-                isOwner={summary.isOwner}
-                signedIn={viewerSignedIn}
-                onOpenMeta={onOpenMeta}
-                onViewAll={() => setExpanded("lists")}
-                onManage={() => setPickingLists(true)}
-                handle={handle}
-              />
-              <BadgesRow badges={badges} onViewAll={() => setExpanded("badges")} handle={handle} />
-              <RecentActivity
-                items={summary.isOwner || summary.activityPublic ? activity : []}
-                onOpen={onOpenMeta}
-                onViewAll={() => setExpanded("activity")}
-                handle={handle}
-                visibilityPrivate={!summary.isOwner && !summary.activityPublic}
-              />
-              <CommentsSection
-                handle={handle}
-                isOwner={summary.isOwner}
-                signedIn={!!authKey}
-                onOpenAuthor={onOpenProfile}
-              />
+              {orderedCards.map((k, i) => {
+                const isHidden = hiddenSet.has(k);
+                if (isHidden && !arranging) return null;
+                return (
+                  <div key={k}>
+                    {arranging && summary.isOwner && (
+                      <ProfileCardControls
+                        cardKey={k}
+                        index={i}
+                        total={orderedCards.length}
+                        hidden={isHidden}
+                        onMove={(dir) => applyLayout(moveCard(orderedCards, k, dir), [...hiddenSet])}
+                        onToggleHide={() => {
+                          const h = new Set(hiddenSet);
+                          if (h.has(k)) h.delete(k);
+                          else h.add(k);
+                          applyLayout(orderedCards, [...h]);
+                        }}
+                      />
+                    )}
+                    <div className={isHidden && arranging ? "opacity-40" : ""}>{cardNodes[k]}</div>
+                  </div>
+                );
+              })}
             </div>
-            <aside className="lg:sticky lg:top-24 lg:self-start space-y-6">
+            <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+              <ProfileAudioCard audioUrl={summary.audioUrl} />
               <WatchNowCard watching={summary.watching} />
-              <FriendsPanel friends={friends} onOpen={onOpenProfile} isOwner={summary.isOwner} />
-              <GroupsPanel isOwner={summary.isOwner} handle={handle} onOpenProfile={onOpenProfile} />
+              <FriendsPanel friends={friends} onOpen={onOpenProfile} isOwner={summary.isOwner} total={summary.counts.friends} />
+              <GroupsPanel isOwner={summary.isOwner} handle={handle} />
               <SocialsPanel socials={summary.socials} isOwner={summary.isOwner} onSaved={patchSummary} />
             </aside>
           </div>
@@ -202,7 +276,32 @@ export function ProfileView({
             onClose={() => setShowRatings(false)}
           />
         )}
+        {importingRatings && (
+          <ImportModal
+            onClose={() => {
+              setImportingRatings(false);
+              reload();
+            }}
+          />
+        )}
       </div>
+
+      {arranging && summary.isOwner && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-7 z-[130] flex justify-center px-6">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-elevated/95 py-2 pe-2 ps-4 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.85)] ring-1 ring-edge-soft backdrop-blur-md">
+            <span className="text-[13px] text-ink-muted">{t("Move or hide your cards")}</span>
+            <button
+              onClick={() => {
+                setArranging(false);
+                setEditing(true);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
+            >
+              <Check size={15} strokeWidth={2.6} /> {t("Save")}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

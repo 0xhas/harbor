@@ -66,7 +66,7 @@ export type DataAttr = {
 export const ROOT_DATA_ATTRS: DataAttr[] = [
   {
     attr: "data-theme-layout",
-    values: ["sidebar", "topdock", "rail", "stremio", "minui", "dracula", "nord", "forest", "royal", "custom"],
+    values: ["sidebar", "topdock", "rail", "stremio", "minui", "dracula", "nord", "forest", "royal", "cinematic", "custom"],
     desc: "Which chrome layout is active. On custom, no built-in chrome renders and your HTML overlay is the chrome.",
     example: 'html[data-theme-layout="custom"] main { padding: 0; }',
   },

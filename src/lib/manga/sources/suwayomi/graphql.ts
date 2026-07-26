@@ -125,6 +125,8 @@ function mapGqlChapters(chapters: any[]): RestChapter[] {
         uploadDate: ch.uploadDate != null ? String(ch.uploadDate) : undefined,
         pageCount: Number.isFinite(pc) && pc >= 0 ? pc : 0,
         downloaded: !!ch.isDownloaded,
+        isRead: ch.isRead === true,
+        lastPageRead: Number.isFinite(Number(ch.lastPageRead)) ? Number(ch.lastPageRead) : undefined,
       };
     });
 }
@@ -133,7 +135,7 @@ export async function gqlChapters(client: SuwayomiClient, mangaId: string): Prom
   if (!isDigits(mangaId)) return [];
   const q = `query {
     chapters(condition: { mangaId: ${mangaId} }) {
-      nodes { id name chapterNumber scanlator uploadDate pageCount isDownloaded }
+      nodes { id name chapterNumber scanlator uploadDate pageCount isDownloaded isRead lastPageRead }
     }
   }`;
   const data = await gql(client, q);
@@ -141,7 +143,7 @@ export async function gqlChapters(client: SuwayomiClient, mangaId: string): Prom
   if (Array.isArray(cachedNodes) && cachedNodes.length > 0) return mapGqlChapters(cachedNodes);
   const fq = `mutation {
     fetchChapters(input: { mangaId: ${mangaId} }) {
-      chapters { id name chapterNumber scanlator uploadDate pageCount isDownloaded }
+      chapters { id name chapterNumber scanlator uploadDate pageCount isDownloaded isRead lastPageRead }
     }
   }`;
   const fdata = await gql(client, fq);

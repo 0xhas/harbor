@@ -14,6 +14,7 @@ import { getEpisodeProgress, resumeDefaultSeason } from "@/lib/episode-progress"
 import { scrollToDataEp } from "@/lib/episode-scroll";
 import { tmdbSeasonEpisodes, type Episode, type Season } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
+import { effectiveOrderProvider, tvdbPanelEnabled } from "@/lib/settings/episode-order";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useSimkl } from "@/lib/simkl/provider";
 import { useT } from "@/lib/i18n";
@@ -191,7 +192,7 @@ export function SeriesEpisodes({
   const [mode, setMode] = useState<"seasons" | "arcs">("seasons");
   const arc = useArcGroups({ tvId, tmdbKey: settings.tmdbKey, enabled: settings.episodeArcGroups });
   const arcActive = settings.episodeArcGroups && arc.hasArcs && mode === "arcs";
-  const orderProvider = settings.tvdbOrderPanel ? "tvdb" : settings.episodeOrderProvider;
+  const orderProvider = effectiveOrderProvider(settings);
   const ordering = useEpisodeOrder(
     imdbId,
     meta.id,
@@ -199,7 +200,7 @@ export function SeriesEpisodes({
     settings.tvdbSeasonType,
     settings.tvdbKey,
   );
-  const orderTypes = useTvdbSeasonTypes(imdbId, meta.id, settings.tvdbKey, settings.tvdbOrderPanel);
+  const orderTypes = useTvdbSeasonTypes(imdbId, meta.id, settings.tvdbKey, tvdbPanelEnabled(settings));
   const orderTypesEff =
     settings.tmdbKey && orderTypes.length > 0
       ? [...orderTypes, { value: "tmdb", label: "TMDB" }]
@@ -209,7 +210,7 @@ export function SeriesEpisodes({
     setOrderSeason(-1);
   }, [meta.id]);
   const orderActive = !arcActive && ordering != null;
-  const panelActive = settings.tvdbOrderPanel && (orderActive || orderTypes.length > 0);
+  const panelActive = tvdbPanelEnabled(settings) && (orderActive || orderTypes.length > 0);
   const altActive = arcActive || orderActive;
   const orderSeasonEff =
     ordering && !ordering.seasons.some((s) => s.seasonNumber === orderSeason)

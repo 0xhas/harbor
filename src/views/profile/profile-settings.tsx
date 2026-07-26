@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Loader2, Palette } from "lucide-react";
+import { ArrowLeft, Check, LayoutGrid, Loader2, Palette } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useTogether } from "@/lib/together/provider";
@@ -55,11 +55,13 @@ export function ProfileSettings({
   badges,
   onClose,
   onSaved,
+  onArrange,
 }: {
   summary: ProfileSummary;
   badges?: Badge[];
   onClose: () => void;
   onSaved: (next: ProfileSummary) => void;
+  onArrange?: () => void;
 }) {
   const { authKey } = useAuth();
   const { displayName, setDisplayName } = useTogether();
@@ -71,6 +73,7 @@ export function ProfileSettings({
     location: summary.location ?? "",
     customUrl: summary.customUrl ?? "",
     slogan: summary.slogan ?? "",
+    audioUrl: summary.audioUrl ?? "",
     shareActivity: summary.shareActivity ?? false,
     private: summary.private ?? false,
   });
@@ -80,6 +83,7 @@ export function ProfileSettings({
   const [pickingBadges, setPickingBadges] = useState(false);
   const [customizing, setCustomizing] = useState(false);
   const badgeOptions = pickableBadges(badges ?? []);
+  const canPickBadges = badgeOptions.length > 0 || summary.verified || summary.hideVerified === true;
   const bodyRef = useRef<HTMLDivElement>(null);
   const urlStatus = useCustomUrlAvailability(form.customUrl, summary.handle, summary.customUrl ?? "");
 
@@ -104,7 +108,7 @@ export function ProfileSettings({
     }
   };
 
-  const save = async () => {
+  const save = async (after?: () => void) => {
     if (!authKey) return;
     if (urlBlocked) return setError("That custom url is not available.");
     setSaving(true);
@@ -117,7 +121,7 @@ export function ProfileSettings({
         updateProfile(activeProfile.id, { name: trimmed });
       }
       onSaved(next);
-      onClose();
+      (after ?? onClose)();
     } catch {
       setError("Could not save. Try again.");
     } finally {
@@ -172,6 +176,17 @@ export function ProfileSettings({
               <input value={form.slogan} maxLength={100} onChange={(e) => set("slogan", e.target.value)} className={inputCls} placeholder="Here for the late-night sci-fi" />
             </Field>
 
+            <Field label="Profile song" hint="YouTube, SoundCloud or Spotify link">
+              <input
+                value={form.audioUrl}
+                maxLength={400}
+                onChange={(e) => set("audioUrl", e.target.value.trim())}
+                className={inputCls}
+                placeholder="https://youtu.be/..."
+                spellCheck={false}
+              />
+            </Field>
+
             <Field label="About">
               <AboutEditor value={form.description} onChange={(v) => set("description", v)} />
             </Field>
@@ -211,7 +226,7 @@ export function ProfileSettings({
               </button>
             </div>
 
-            {badgeOptions.length > 0 && (
+            {canPickBadges && (
               <div className="flex items-center justify-between gap-3 pt-1">
                 <div className="min-w-0">
                   <div className="text-[13px] font-medium text-ink">Shown badges</div>
@@ -240,6 +255,23 @@ export function ProfileSettings({
                 <Palette size={16} /> Customize
               </button>
             </div>
+
+            {onArrange && (
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium text-ink">Arrange cards</div>
+                  <div className="text-[12px] text-ink-subtle">Reorder or hide the cards on your profile</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void save(onArrange)}
+                  disabled={saving || !form.alias.trim() || urlBlocked}
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-[10px] px-4 text-[14px] font-medium text-ink ring-1 ring-edge-soft hover:bg-elevated disabled:opacity-40"
+                >
+                  <LayoutGrid size={16} /> Arrange
+                </button>
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-3 rounded-[10px] bg-elevated px-3 py-2.5 ring-1 ring-edge-soft">
               <div className="min-w-0">
@@ -310,6 +342,7 @@ export function ProfileSettings({
         <ShownBadgesPicker
           badges={badges ?? []}
           current={summary.shownBadges ?? []}
+          hideVerified={summary.hideVerified === true}
           onClose={() => setPickingBadges(false)}
           onSaved={onSaved}
         />

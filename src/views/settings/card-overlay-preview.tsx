@@ -36,7 +36,11 @@ export function CardOverlayPreview() {
         {settings.awardTabs && (
           <span
             className={`pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 ${
-              settings.awardTabPosition === "below" ? "bottom-1.5" : "bottom-7"
+              settings.awardTabPosition === "top"
+                ? "top-1.5"
+                : settings.awardTabPosition === "below"
+                  ? "bottom-1.5"
+                  : "bottom-7"
             }`}
           >
             <AwardTab label="TAAF" />

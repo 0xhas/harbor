@@ -111,6 +111,7 @@ import { useTvdbCastFallback } from "./detail/use-tvdb-cast-fallback";
 import { HeroRatings } from "./detail/hero-ratings";
 import { TrailerOverlay } from "./detail/trailer-overlay";
 import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
+import { useScrollUpTrailer } from "./detail/use-scroll-up-trailer";
 import { SeriesEpisodes } from "./detail/series-episodes";
 import { CinemetaEpisodes } from "./detail/cinemeta-episodes";
 import { AnimeEpisodes } from "./detail/anime-episodes";
@@ -395,6 +396,12 @@ export function DetailView({
   const addonNative = liveContext || isAddonNativeMeta(meta);
   const trailerCandidate =
     detail?.trailerCandidates?.[0] ?? meta.trailerStreams?.[0]?.ytId ?? null;
+
+  useScrollUpTrailer(
+    scrollRef,
+    settings.scrollUpTrailer && !!trailerCandidate && !trailerOpen,
+    useCallback(() => setTrailerOpen(true), []),
+  );
   const actionRowRef = useRef<HTMLDivElement | null>(null);
   const actionStage = useHeroActionOverflow(actionRowRef, [meta.id]);
   const addToListRef = useRef<HTMLButtonElement | null>(null);
@@ -1807,7 +1814,7 @@ export function DetailView({
               node: <MediaGallery detail={detail} title={title} logo={logo} metaId={meta.id} />,
             });
           }
-          if (isAnime) {
+          if (isAnime || stickyAwardName.current) {
             railSections.push({
               key: "animeAwards",
               label: t("Awards"),

@@ -9,6 +9,17 @@ export type SportsSide = {
   winner: boolean;
 };
 
+export type EventContext = {
+  id: string;
+  name: string;
+  round: string;
+  draw: string;
+  venue: string;
+  major: boolean;
+  court?: string;
+  bestOf?: number;
+};
+
 export type SportsGame = {
   id: string;
   league: string;
@@ -17,6 +28,7 @@ export type SportsGame = {
   home: SportsSide;
   away: SportsSide;
   startMs: number;
+  context?: EventContext;
 };
 
 export type MatchPlayer = {
@@ -133,7 +145,8 @@ export const LEAGUES: LeagueDef[] = [
   { key: "NASCAR",     label: "NASCAR",             labelEn: "NASCAR",               tag: "NASCAR",path: "racing/nascar-premier",              logo: "https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-NASCAR.png",               group: "motorsport" },
 
   // 🎾 التنس
-  { key: "TENNIS",     label: "التنس (ATP/WTA)",    labelEn: "Tennis (ATP/WTA)",     tag: "ATP",   path: "tennis/atp",                         logo: "https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-tennis.png", group: "tennis" },
+  { key: "TENNIS",     label: "التنس (ATP)",        labelEn: "Tennis (ATP)",         tag: "ATP",   path: "tennis/atp",                         logo: "https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-tennis.png", group: "tennis" },
+  { key: "TENNIS_WTA", label: "التنس (WTA)",        labelEn: "Tennis (WTA)",         tag: "WTA",   path: "tennis/wta",                         logo: "https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-tennis.png", group: "tennis" },
 
   // 🏌 الغولف
   { key: "PGA",        label: "بطولة PGA",          labelEn: "PGA Tour",             tag: "PGA",   path: "golf/pga",                           logo: "https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-golf.png",    group: "golf" },
@@ -169,7 +182,12 @@ function toSide(c: Record<string, unknown> | undefined, group?: string): SportsS
   
   // For racing (F1, NASCAR), use order/position instead of score
   let scoreValue = typeof c?.score === "string" ? c.score : String(c?.score ?? "");
-  if (!scoreValue && typeof c?.order === "number") {
+  if (!scoreValue && group === "tennis") {
+    const sets = (c?.linescores as Record<string, unknown>[] | undefined) ?? [];
+    const won = sets.filter((s) => s?.winner === true).length;
+    scoreValue = sets.length > 0 ? String(won) : "";
+  }
+  if (!scoreValue && (group === "motorsport" || group === "golf") && typeof c?.order === "number") {
     const order = c.order as number;
     // Format as 1st, 2nd, 3rd, 4th, etc.
     const suffix = order === 1 ? "st" : order === 2 ? "nd" : order === 3 ? "rd" : "th";
@@ -296,12 +314,19 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
 
     // Tennis / Golf use "groupings" → each grouping has "competitions"
     // Flatten them into a single competitions list
-    const groupings = ev.groupings as { competitions?: unknown[] }[] | undefined;
+    const groupings = ev.groupings as
+      | { competitions?: unknown[]; grouping?: { displayName?: string } }[]
+      | undefined;
     const flatComps: Record<string, unknown>[] = [];
+    const drawOf = new Map<Record<string, unknown>, string>();
     if (Array.isArray(groupings)) {
       for (const g of groupings) {
         if (Array.isArray(g.competitions)) {
-          for (const c of g.competitions) flatComps.push(c as Record<string, unknown>);
+          for (const c of g.competitions) {
+            const comp = c as Record<string, unknown>;
+            flatComps.push(comp);
+            drawOf.set(comp, g.grouping?.displayName ?? "");
+          }
         }
       }
     }
@@ -388,6 +413,7 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
           ? `${ev.id}|${comp.id}`
           : String(ev.id ?? `${def.key}-${out.length}`);
 
+      const round = ((comp.round as Record<string, unknown> | undefined)?.displayName as string) ?? "";
       out.push({
         id: idStr,
         league: def.tag,
@@ -396,6 +422,17 @@ function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
         home: hSide,
         away: aSide,
         startMs: Date.parse(((comp.date as string) || (ev.date as string)) ?? "") || 0,
+        context:
+          def.group === "tennis"
+            ? {
+                id: String(ev.id ?? ""),
+                name: (ev.shortName as string) || (ev.name as string) || "",
+                round,
+                draw: drawOf.get(comp) ?? ((comp.type as Record<string, unknown> | undefined)?.text as string) ?? "",
+                venue: ((ev.venue as Record<string, unknown> | undefined)?.displayName as string) ?? "",
+                major: ev.major === true,
+              }
+            : undefined,
       });
     }
   }
@@ -545,17 +582,29 @@ export async function fetchMatchSummary(leagueTag: string, eventId: string): Pro
   // is not match-addressable, so pull the specific match out of the scoreboard.
   if (def.group === "tennis" && eventId.includes("|")) {
     const [evId, cId] = eventId.split("|");
-    const sres = await safeFetch(`${BASE}/${def.path}/scoreboard`);
-    if (!sres.ok) return null;
-    const sdata = await sres.json();
-    const event = (sdata.events || []).find((e: any) => String(e.id) === evId);
+    const stamp = (d: Date) => {
+      const p = (n: number) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+    };
+    const now = Date.now();
+    const wide = `${stamp(new Date(now - 21 * 86400000))}-${stamp(new Date(now + 21 * 86400000))}`;
+    let event: any = null;
     let comp: any = null;
-    for (const g of event?.groupings || []) {
-      const found = (g.competitions || []).find((c: any) => String(c.id) === cId);
-      if (found) {
-        comp = found;
-        break;
+    let drawName = "";
+    for (const q of ["", `?dates=${wide}`]) {
+      const sres = await safeFetch(`${BASE}/${def.path}/scoreboard${q}`);
+      if (!sres.ok) continue;
+      const sdata = await sres.json();
+      event = (sdata.events || []).find((e: any) => String(e.id) === evId) ?? null;
+      for (const g of event?.groupings || []) {
+        const found = (g.competitions || []).find((c: any) => String(c.id) === cId);
+        if (found) {
+          comp = found;
+          drawName = g.grouping?.displayName || "";
+          break;
+        }
       }
+      if (comp) break;
     }
     if (!comp) return null;
     const cs: any[] = comp.competitors || [];
@@ -585,11 +634,12 @@ export async function fetchMatchSummary(leagueTag: string, eventId: string): Pro
     }
     const tp = comp.status?.type || {};
     const round = comp.round?.displayName || comp.type?.text || "";
+    const tourName = event?.shortName || event?.name || "";
     return {
       id: eventId,
       league: def.tag,
       state: tp.state === "in" || tp.state === "post" ? tp.state : "pre",
-      detail: [round, tp.shortDetail || tp.detail].filter(Boolean).join(" · "),
+      detail: [tourName, round, tp.shortDetail || tp.detail].filter(Boolean).join(" · "),
       startMs: Date.parse(comp.date || event?.date || "") || 0,
       home: side(homeRaw),
       away: side(awayRaw),
@@ -599,6 +649,16 @@ export async function fetchMatchSummary(leagueTag: string, eventId: string): Pro
       awayStats: {},
       allStats,
       events: [],
+      context: {
+        id: String(event?.id ?? ""),
+        name: tourName,
+        round,
+        draw: drawName || comp.type?.text || "",
+        venue: event?.venue?.displayName || "",
+        major: event?.major === true,
+        court: typeof comp.court === "string" ? comp.court : comp.court?.displayName || "",
+        bestOf: Number(comp.format?.regulation?.periods) || undefined,
+      },
     };
   }
 

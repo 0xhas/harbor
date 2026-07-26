@@ -7,8 +7,9 @@ import { useT } from "@/lib/i18n";
 import { useOnboarding } from "@/lib/onboarding";
 import { Tooltip } from "@/views/detail/tooltip";
 
+import { releaseYear } from "@/lib/release-info";
 function profileFromMeta(meta: Meta) {
-  const year = meta.releaseInfo ? parseInt(meta.releaseInfo.slice(0, 4), 10) : NaN;
+  const year = releaseYear(meta.releaseInfo);
   const decade = Number.isFinite(year) ? `${Math.floor(year / 10) * 10}s` : undefined;
   return {
     cast: [],

@@ -293,6 +293,9 @@ export function ThemeStudio({ seed, onClose }: { seed?: ThemePreset; onClose: ()
       buttonStyle: draft.buttonStyle,
       fontPair: draft.fontPair,
       bokeh: draft.bokeh,
+      ...(settings.theme.backgroundImage
+        ? { background: { image: settings.theme.backgroundImage, dim: settings.theme.backgroundDim } }
+        : {}),
       ...(draft.customFontId ? { customFontId: draft.customFontId } : {}),
       ...(draft.layout === "custom" ? { chrome: draft.chrome } : {}),
       ...(hasNav ? { navCustomization: nav } : {}),

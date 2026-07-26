@@ -81,6 +81,68 @@ impl CacheSweeper {
     }
 }
 
+fn newest_mtime(paths: &[std::path::PathBuf]) -> Option<std::time::SystemTime> {
+    paths
+        .iter()
+        .filter_map(|p| std::fs::metadata(p).and_then(|m| m.modified()).ok())
+        .max()
+}
+
+async fn expire_session_torrents(dir: &std::path::Path, retention_hours: u64) -> u64 {
+    let Some(session) = current_session() else {
+        return 0;
+    };
+    let now = std::time::SystemTime::now();
+    let max_age = Duration::from_secs(retention_hours.saturating_mul(3600));
+    let live: Vec<(String, Vec<std::path::PathBuf>)> = session.with_torrents(|torrents| {
+        torrents
+            .map(|(_id, handle)| {
+                let info_hash = format!("{:?}", handle.info_hash());
+                let paths = handle
+                    .with_metadata(|m| {
+                        m.file_infos
+                            .iter()
+                            .map(|fi| dir.join(&fi.relative_filename))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
+                (info_hash, paths)
+            })
+            .collect()
+    });
+
+    let mut expired = 0_u64;
+    for (info_hash, paths) in live {
+        if paths.is_empty() {
+            continue;
+        }
+        let stale = if retention_hours == 0 {
+            true
+        } else {
+            match newest_mtime(&paths) {
+                Some(m) => now
+                    .duration_since(m)
+                    .map(|age| age >= max_age)
+                    .unwrap_or(false),
+                None => false,
+            }
+        };
+        if !stale {
+            continue;
+        }
+        let Ok(id) = TorrentIdOrHash::parse(&info_hash) else {
+            continue;
+        };
+        match session.delete(id, true).await {
+            Ok(()) => expired += 1,
+            Err(error) => {
+                eprintln!("[torrent-engine] cache sweep could not release {info_hash}: {error:#}")
+            }
+        }
+    }
+    expired
+}
+
 fn spawn_cache_sweeper(app: AppHandle) -> CacheSweeper {
     let cancelled = Arc::new(AtomicBool::new(false));
     let cancelled_for_task = cancelled.clone();
@@ -95,6 +157,10 @@ fn spawn_cache_sweeper(app: AppHandle) -> CacheSweeper {
                 let retention = cfg.retention_hours.unwrap_or(24);
                 let max_gb = cfg.max_gb.unwrap_or(0);
                 let started = std::time::Instant::now();
+                let released = expire_session_torrents(&dir, retention).await;
+                if released > 0 {
+                    eprintln!("[torrent-engine] cache sweep released {released} expired torrent(s)");
+                }
                 let cancelled_for_sweep = cancelled_for_task.clone();
                 let result = tokio::task::spawn_blocking(move || {
                     if CACHE_SWEEP_RUNNING

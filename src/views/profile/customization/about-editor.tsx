@@ -15,10 +15,18 @@ import {
   Youtube,
 } from "lucide-react";
 import { renderBbcode } from "@/lib/social/bbcode";
+import { EmbedPrompt, type EmbedKind } from "@/components/embed-prompt";
 
 export const ABOUT_MAX = 4000;
 
-type Tool = { icon: typeof Bold; label: string; open: string; close: string; placeholder?: string };
+type Tool = {
+  icon: typeof Bold;
+  label: string;
+  open: string;
+  close: string;
+  placeholder?: string;
+  embed?: EmbedKind;
+};
 
 const TOOLS: Tool[] = [
   { icon: Bold, label: "Bold", open: "[b]", close: "[/b]" },
@@ -29,28 +37,44 @@ const TOOLS: Tool[] = [
   { icon: Code, label: "Code", open: "[code]", close: "[/code]" },
   { icon: List, label: "List", open: "[list]\n[*] ", close: "\n[/list]", placeholder: "item" },
   { icon: Link2, label: "Link", open: "[url=https://]", close: "[/url]", placeholder: "link text" },
-  { icon: ImageIcon, label: "Image", open: "[img]", close: "[/img]", placeholder: "https://" },
-  { icon: Youtube, label: "YouTube", open: "[youtube]", close: "[/youtube]", placeholder: "https://youtu.be/..." },
-  { icon: Music2, label: "Spotify", open: "[spotify]", close: "[/spotify]", placeholder: "https://open.spotify.com/..." },
+  { icon: ImageIcon, label: "Image", open: "[img]", close: "[/img]", embed: "img" },
+  { icon: Youtube, label: "YouTube", open: "[youtube]", close: "[/youtube]", embed: "youtube" },
+  { icon: Music2, label: "Spotify", open: "[spotify]", close: "[/spotify]", embed: "spotify" },
 ];
 
 export function AboutEditor({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [preview, setPreview] = useState(false);
+  const [embed, setEmbed] = useState<EmbedKind | null>(null);
+  const caret = useRef(0);
 
-  const apply = (tool: Tool) => {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const sel = value.slice(start, end) || tool.placeholder || "";
-    const next = value.slice(0, start) + tool.open + sel + tool.close + value.slice(end);
+  const splice = (start: number, end: number, text: string) => {
+    const next = value.slice(0, start) + text + value.slice(end);
     onChange(next.slice(0, ABOUT_MAX));
     requestAnimationFrame(() => {
-      el.focus();
-      const pos = start + tool.open.length + sel.length;
-      el.setSelectionRange(pos, pos);
+      ref.current?.focus();
+      const pos = start + text.length;
+      ref.current?.setSelectionRange(pos, pos);
     });
+  };
+
+  const apply = (tool: Tool) => {
+    if (tool.embed) {
+      caret.current = ref.current?.selectionStart ?? value.length;
+      setPreview(false);
+      setEmbed(tool.embed);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const sel = value.slice(el.selectionStart, el.selectionEnd) || tool.placeholder || "";
+    splice(el.selectionStart, el.selectionEnd, tool.open + sel + tool.close);
+  };
+
+  const insertEmbed = (bbcode: string) => {
+    const at = Math.min(caret.current, value.length);
+    const pad = at > 0 && value[at - 1] !== "\n" ? "\n" : "";
+    splice(at, at, `${pad}${bbcode}\n`);
   };
 
   const over = value.length > ABOUT_MAX;
@@ -78,6 +102,8 @@ export function AboutEditor({ value, onChange }: { value: string; onChange: (nex
           {preview ? <Pencil size={13} /> : <Eye size={14} />} {preview ? "Edit" : "Preview"}
         </button>
       </div>
+
+      {embed && <EmbedPrompt kind={embed} onInsert={insertEmbed} onClose={() => setEmbed(null)} />}
 
       {preview ? (
         <div className="min-h-[120px] rounded-[8px] bg-canvas/40 p-3">

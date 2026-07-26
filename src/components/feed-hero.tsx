@@ -74,11 +74,15 @@ export function FeedHero({
               type="button"
               onClick={() => openMeta(meta)}
               aria-label={t("See details")}
-              className="grid h-11 w-11 place-items-center text-ink/90 transition-[color,transform] duration-200 hover:-translate-y-0.5 hover:text-ink motion-reduce:hover:translate-y-0"
+              className="group relative grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink/90 transition-colors duration-200 ease-out hover:text-ink"
             >
               <span
                 aria-hidden
-                className="block h-7 w-7 [filter:drop-shadow(0_2px_7px_rgba(0,0,0,0.7))]"
+                className="absolute inset-0 scale-75 rounded-full bg-ink/10 opacity-0 transition-[opacity,transform] duration-200 ease-out group-hover:scale-100 group-hover:opacity-100 motion-reduce:transition-none"
+              />
+              <span
+                aria-hidden
+                className="relative block h-7 w-7 transition-transform duration-200 ease-out group-hover:scale-[1.08] group-active:scale-95 motion-reduce:transform-none [filter:drop-shadow(0_2px_7px_rgba(0,0,0,0.7))]"
                 style={{
                   backgroundColor: "currentColor",
                   maskImage: `url(${tideInfo})`,

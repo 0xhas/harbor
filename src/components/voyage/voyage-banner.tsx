@@ -35,6 +35,29 @@ export function VoyageBanner({ pool }: { pool: Meta[] }) {
   }, [active, pool]);
   const strip = items.length >= 2 ? [...items, ...items] : items;
 
+  const sailing = active?.phase === "sailing";
+  const ready = !!active && !sailing && active.routeIds.length >= active.targetLength;
+  const pitch = !active
+    ? t("A short run of films you'll actually finish. You pick every stop.")
+    : sailing
+      ? t("{done} of {total} watched so far.", {
+          done: active.playedIds.length,
+          total: active.routeIds.length,
+        })
+      : ready
+        ? t("Your queue is full. Start whenever you're ready.")
+        : t("{done} of {total} films picked.", {
+            done: active.routeIds.length,
+            total: active.targetLength,
+          });
+  const cta = !active
+    ? t("Start a voyage")
+    : sailing
+      ? t("Continue your voyage")
+      : ready
+        ? t("Start voyage")
+        : t("Keep picking");
+
   return (
     <section ref={rootRef} className="group relative min-h-[172px] w-full overflow-hidden rounded-2xl bg-canvas ring-1 ring-edge-soft">
       <div
@@ -80,11 +103,9 @@ export function VoyageBanner({ pool }: { pool: Meta[] }) {
         <h2 className="font-display text-[26px] font-medium leading-[1.05] tracking-tight text-ink sm:text-[30px]">
           {active ? active.themeLabel : t("Set a course")}
         </h2>
-        <p className="max-w-[34ch] text-[13px] leading-relaxed text-ink-muted">
-          {active ? t("Pick up where you left off.") : t("A short run of films you'll actually finish. You pick every stop.")}
-        </p>
+        <p className="max-w-[34ch] text-[13px] leading-relaxed text-ink-muted">{pitch}</p>
         <span className="mt-1 flex h-9 w-fit items-center rounded-full bg-ink px-5 text-[13px] font-semibold text-canvas transition-[filter,transform] duration-150 group-hover:brightness-105 group-active:scale-[0.97]">
-          {active ? t("Continue voyage") : t("Start a voyage")}
+          {cta}
         </span>
       </div>
 

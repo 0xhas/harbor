@@ -9,6 +9,7 @@ import { clearSeriesInfoCache } from "@/lib/iptv/xtream-vod";
 import { clearDeadStreams } from "@/lib/dead-streams";
 import { clearResurfaceCache } from "@/lib/cw-resurface";
 import { settingsAnchor } from "./shared";
+import { TempFilesCard } from "./temp-files-card";
 
 function fmtBytes(n: number): string {
   if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
@@ -123,6 +124,7 @@ export function StoragePanel() {
 
   return (
     <div className="flex flex-col gap-5">
+      <TempFilesCard />
       <section
         id={settingsAnchor("Storage overview")}
         className="scroll-mt-28 flex flex-col gap-4 rounded-2xl border border-edge-soft bg-elevated/40 p-7"

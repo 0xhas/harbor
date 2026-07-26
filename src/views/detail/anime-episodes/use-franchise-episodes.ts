@@ -42,16 +42,22 @@ export function useFranchiseEpisodes(
 
   return useMemo(() => {
     if (!enabled || otherIds.length === 0 || extra.length === 0) return currentEpisodes;
-    const seen = new Set<number>();
+    const keyOf = (ep: KitsuEpisode) =>
+      ep.imdbSeason != null && ep.imdbEpisode != null
+        ? `s${ep.imdbSeason}e${ep.imdbEpisode}`
+        : `${ep.sourceMetaId ?? "cur"}:${ep.id}`;
+    const seen = new Set<string>();
     const combined: KitsuEpisode[] = [];
     for (const ep of currentEpisodes) {
-      if (seen.has(ep.id)) continue;
-      seen.add(ep.id);
+      const k = keyOf(ep);
+      if (seen.has(k)) continue;
+      seen.add(k);
       combined.push(ep);
     }
     for (const ep of extra) {
-      if (seen.has(ep.id)) continue;
-      seen.add(ep.id);
+      const k = keyOf(ep);
+      if (seen.has(k)) continue;
+      seen.add(k);
       combined.push(ep);
     }
     combined.sort(

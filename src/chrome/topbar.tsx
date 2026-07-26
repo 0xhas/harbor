@@ -389,7 +389,7 @@ function SearchPill() {
       onClick={() => setOpen(true)}
       className={
         settings.liquidGlass
-          ? "harbor-search-pill flex h-full w-full items-center gap-3 rounded-full bg-transparent px-5 text-start outline-none"
+          ? "flex h-full w-full items-center gap-3 rounded-full bg-transparent px-5 text-start outline-none"
           : "harbor-search-pill flex h-11 w-full items-center gap-3 rounded-full border border-edge-soft/60 bg-elevated/80 px-5 text-start outline-none transition-colors duration-200 hover:bg-elevated"
       }
     >
@@ -408,11 +408,12 @@ function SearchPill() {
       radius="9999px"
       shaderRadius={0.58}
       intensity={0.9}
+      onClick={() => setOpen(true)}
       style={{
         background: "transparent",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.05)",
       }}
-      className="h-11 w-full border border-white/[0.08]"
+      className="harbor-search-pill h-11 w-full border border-white/[0.08]"
       contentClassName="flex h-full w-full"
     >
       {pill}

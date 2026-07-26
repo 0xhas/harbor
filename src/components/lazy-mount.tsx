@@ -69,11 +69,14 @@ export function LazyMount({
   return (
     <div
       ref={ref}
-      style={{
-        ...CULL_STYLE,
-        containIntrinsicSize: `auto ${minHeight}px`,
-        ...(shown ? null : { minHeight }),
-      }}
+      className="harbor-lazy-cull"
+      style={
+        {
+          ...CULL_STYLE,
+          "--harbor-cull-min": `${minHeight}px`,
+          ...(shown ? null : { minHeight }),
+        } as CSSProperties
+      }
       aria-hidden={shown ? undefined : true}
     >
       {shown ? children : fallback}

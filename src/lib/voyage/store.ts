@@ -6,7 +6,7 @@ import { externalWatchedIds } from "@/lib/feed/external-watched";
 import { movieWatchedIds } from "@/lib/movie-watched";
 import { watchedFlagIds } from "@/lib/watched-flag";
 import { generatePool, type PoolExclude } from "./generate";
-import type { Voyage, VoyageState, VoyageTheme } from "./types";
+import type { StoredVoyage, Voyage, VoyageState, VoyageTheme } from "./types";
 
 const KEY = "harbor.voyage.v1";
 
@@ -16,10 +16,19 @@ function dayKey(offset = 0): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
+function adopt(v: StoredVoyage): Voyage {
+  if (v.phase) return { ...v, phase: v.phase, playedIds: v.playedIds ?? [] };
+  if (v.routeIds.length === 0) return { ...v, phase: "building", playedIds: [] };
+  return { ...v, phase: "sailing", playedIds: [...v.routeIds], targetLength: v.routeIds.length };
+}
+
 function load(): VoyageState {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as VoyageState;
+    if (raw) {
+      const s = JSON.parse(raw) as Omit<VoyageState, "active"> & { active: StoredVoyage | null };
+      return { ...s, active: s.active ? adopt(s.active) : null };
+    }
   } catch {
     /* ignore */
   }
@@ -132,8 +141,10 @@ export async function startVoyage(theme: VoyageTheme, targetLength = 5): Promise
     accent: theme.accent,
     createdAt: Date.now(),
     targetLength,
+    phase: "building",
     pool,
     routeIds: [],
+    playedIds: [],
     headingIds,
     seen: [...headingIds],
   };
@@ -143,20 +154,54 @@ export async function startVoyage(theme: VoyageTheme, targetLength = 5): Promise
 
 export function chooseHeading(id: string) {
   const v = state.active;
-  if (!v || v.routeIds.includes(id)) return;
+  if (!v || v.phase !== "building" || v.routeIds.includes(id)) return;
   const routeIds = [...v.routeIds, id];
   const used = new Set(routeIds);
   const seen = new Set(v.seen ?? []);
-  const complete = routeIds.length >= v.targetLength;
+  const full = routeIds.length >= v.targetLength;
   const last = metaById(v, id);
-  const headingIds = complete ? [] : pickHeadings(v.pool, used, seen, 3, last);
-  const nextSeen = complete ? (v.seen ?? []) : [...new Set([...(v.seen ?? []), ...headingIds])];
+  const headingIds = full ? [] : pickHeadings(v.pool, used, seen, 3, last);
+  const nextSeen = full ? (v.seen ?? []) : [...new Set([...(v.seen ?? []), ...headingIds])];
   set({ active: { ...v, routeIds, headingIds, seen: nextSeen }, ...sailFields() });
+}
+
+export function undoPick() {
+  const v = state.active;
+  if (!v || v.phase !== "building" || v.routeIds.length === 0) return;
+  const routeIds = v.routeIds.slice(0, -1);
+  const lastId = routeIds[routeIds.length - 1];
+  const last = lastId ? metaById(v, lastId) : undefined;
+  const headingIds = pickHeadings(v.pool, new Set(routeIds), new Set(v.seen ?? []), 3, last);
+  const nextSeen = [...new Set([...(v.seen ?? []), ...headingIds])];
+  set({ active: { ...v, routeIds, headingIds, seen: nextSeen } });
+}
+
+export function launchVoyage() {
+  const v = state.active;
+  if (!v || v.phase !== "building" || v.routeIds.length === 0) return;
+  set({
+    active: { ...v, phase: "sailing", headingIds: [], targetLength: v.routeIds.length },
+    ...sailFields(),
+  });
+}
+
+export function markPlayed(id: string) {
+  const v = state.active;
+  if (!v || v.playedIds.includes(id)) return;
+  set({ active: { ...v, playedIds: [...v.playedIds, id] }, ...sailFields() });
+}
+
+export function voyageReady(v: Voyage): boolean {
+  return v.phase === "building" && v.routeIds.length >= v.targetLength;
+}
+
+export function nextUnplayedId(v: Voyage): string | undefined {
+  return v.routeIds.find((id) => !v.playedIds.includes(id));
 }
 
 export function rerollHeadings() {
   const v = state.active;
-  if (!v) return;
+  if (!v || v.phase !== "building") return;
   const lastId = v.routeIds[v.routeIds.length - 1];
   const last = lastId ? metaById(v, lastId) : undefined;
   const used = new Set(v.routeIds);

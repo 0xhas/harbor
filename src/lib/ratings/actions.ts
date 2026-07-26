@@ -30,7 +30,7 @@ export async function rate(
     setRatingLocal(saved);
   } catch (e) {
     const status = statusOf(e);
-    if (status && status >= 400 && status < 500) {
+    if (status && status >= 400 && status < 500 && status !== 429) {
       if (prev) setRatingLocal(prev);
       else removeRatingLocal(target.itemKey);
     }

@@ -1,13 +1,15 @@
-import { Check, ImagePlus, Loader2, MapPin, Settings2, Share2, UserMinus, UserPlus } from "lucide-react";
+import { Activity, Check, ImagePlus, Loader2, MapPin, Settings2, Share2, UserMinus, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { ShareModal } from "./share-modal";
 import { countryFlagSrc } from "@/components/flag";
 import { acceptFriend, removeFriend, sendFriendRequest } from "@/lib/social/friends";
 import { PRESENCE_META, useMyPresence } from "@/lib/social/presence";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { countryName } from "./flags";
 import { saveSlogan } from "./profile-api";
 import { orderShownBadges } from "./badge-catalog";
+import { EditProfileHint } from "./edit-profile-hint";
 import { Avatar, compactNumber, FeaturedBadge, StatPill, VerifiedCheck } from "./profile-bits";
 import { StatusBubble } from "./status-bubble";
 import type { ProfileSummary } from "./profile-types";
@@ -38,6 +40,7 @@ export function ProfileHero({
   onPatch?: (next: ProfileSummary) => void;
 }) {
   const t = useT();
+  const { openFeed } = useView();
   const nameFont = userFont ? { fontFamily: `"${userFont}", var(--font-display)` } : undefined;
   const nameBadges = orderShownBadges(badges ?? [], p.shownBadges).filter((b) => b.iconUrl).slice(0, 6);
   const [sharing, setSharing] = useState(false);
@@ -75,7 +78,7 @@ export function ProfileHero({
         {p.isOwner && !p.bannerUrl && !hideBanner && onEdit && (
           <button
             onClick={onEdit}
-            className="absolute end-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-elevated/70 px-3 py-1.5 text-[12px] font-medium text-ink ring-1 ring-edge-soft backdrop-blur transition-colors hover:bg-elevated"
+            className="absolute end-4 top-24 inline-flex items-center gap-1.5 rounded-full bg-elevated/70 px-3 py-1.5 text-[12px] font-medium text-ink ring-1 ring-edge-soft backdrop-blur transition-colors hover:bg-elevated"
           >
             <ImagePlus size={14} /> {t("Add background")}
           </button>
@@ -129,17 +132,25 @@ export function ProfileHero({
             {p.isOwner && onEdit ? (
               <>
                 <button
+                  onClick={openFeed}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-surface px-4 text-[14px] font-medium text-ink ring-1 ring-edge transition-colors hover:bg-raised"
+                >
+                  <Activity size={18} /> {t("Activity")}
+                </button>
+                <button
                   onClick={() => setSharing(true)}
                   className="inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-surface px-4 text-[14px] font-medium text-ink ring-1 ring-edge transition-colors hover:bg-raised"
                 >
                   <Share2 size={18} /> {t("Share")}
                 </button>
-                <button
-                  onClick={onEdit}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-surface px-4 text-[14px] font-medium text-ink ring-1 ring-edge transition-colors hover:bg-raised"
-                >
-                  <Settings2 size={18} /> {t("Edit profile")}
-                </button>
+                <EditProfileHint enabled={p.isOwner}>
+                  <button
+                    onClick={onEdit}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-[10px] bg-surface px-4 text-[14px] font-medium text-ink ring-1 ring-edge transition-colors hover:bg-raised"
+                  >
+                    <Settings2 size={18} /> {t("Edit profile")}
+                  </button>
+                </EditProfileHint>
               </>
             ) : (
               !p.isOwner && (

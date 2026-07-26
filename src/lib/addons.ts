@@ -56,6 +56,36 @@ export type AddonRow = {
   more?: AddonCatalogCursor;
 };
 
+const EPISODE_ID_SUFFIX = /:(\d+):(\d+)$/;
+
+function seriesBaseId(m: Meta): string {
+  if (m.type !== "series" && m.type !== "anime") return m.id;
+  return m.id.replace(EPISODE_ID_SUFFIX, "");
+}
+
+function collapseEpisodeMetas(metas: Meta[]): Meta[] {
+  const counts = new Map<string, number>();
+  for (const m of metas) {
+    const base = seriesBaseId(m);
+    counts.set(base, (counts.get(base) ?? 0) + 1);
+  }
+  let collapses = 0;
+  for (const n of counts.values()) if (n > 1) collapses += 1;
+  if (collapses === 0) return metas;
+  const seen = new Set<string>();
+  const out: Meta[] = [];
+  for (const m of metas) {
+    const base = seriesBaseId(m);
+    if ((counts.get(base) ?? 0) < 2) {
+      out.push(m);
+      continue;
+    }
+    if (seen.has(base)) continue;
+    seen.add(base);
+    out.push(base === m.id ? m : { ...m, id: base });
+  }
+  return out;
+}
 export function addonAccepts(addon: Addon, resource: string, type: string, id: string): boolean {
   const m = addon.manifest;
   const resources = m.resources ?? [];
@@ -320,7 +350,7 @@ export async function loadAddonRows(
             base,
           };
           const collection = isCollectionCatalog(cat);
-          const metas: Meta[] = raw.map((m) => ({
+          const metas: Meta[] = collapseEpisodeMetas(raw).map((m) => ({
             ...m,
             addonOrigin: origin,
             ...(collection ? { isCollection: true } : null),

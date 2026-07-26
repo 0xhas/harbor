@@ -2,13 +2,16 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import cloudflareLogo from "@/assets/cloudflare.webp";
 import { isTauri } from "./internals";
+import { runSpeedTest, type SpeedTestResult } from "./speed-test-run";
 
-const SPEEDTEST_CHUNK = 25_000_000;
-const SPEEDTEST_URL = `https://speed.cloudflare.com/__down?bytes=${SPEEDTEST_CHUNK}`;
-const SPEEDTEST_STREAMS = 4;
-const SPEEDTEST_DURATION_MS = 8000;
-const SPEEDTEST_WARMUP_MS = 1500;
-const SPEEDTEST_COOLDOWN_MS = 60_000;
+const SPEEDTEST_COOLDOWN_MS = 90_000;
+const SPEEDTEST_LIMITED_COOLDOWN_MS = 300_000;
+
+const ERROR_COPY: Record<Exclude<SpeedTestResult, { ok: true }>["reason"], string> = {
+  rate_limited: "Cloudflare rate limited this test. Try again in a few minutes.",
+  network: "Could not reach speed.cloudflare.com.",
+  insufficient: "Not enough data transferred to measure reliably.",
+};
 
 export function formatMbps(mbps: number): string {
   if (mbps >= 1000) return `${(mbps / 1000).toFixed(2)} Gbps`;
@@ -85,19 +88,21 @@ function SpeedResultBadge({ value }: { value: string }) {
             </span>
           </div>
           <p className="mb-2.5 text-[12.5px] leading-snug text-ink-muted">
-            Harbor opens 4 parallel HTTP streams to{" "}
-            <span className="font-medium text-ink">speed.cloudflare.com</span>, runs for 8 seconds,
-            and discards the first 1.5s of warmup so TCP slow-start doesn't tank the result.
+            Harbor opens 4 parallel requests to{" "}
+            <span className="font-medium text-ink">speed.cloudflare.com</span>, discards the first
+            1.2s so TCP slow-start doesn't tank the result, then measures until it has 150 MB or 8
+            seconds of steady-state transfer.
           </p>
           <p className="mb-2 text-[12.5px] leading-snug text-ink-muted">
-            The reported number is your steady-state throughput, which is what fast.com and
-            speedtest.net also use.
+            The number is bytes divided by the time they actually took to arrive. Cloudflare is a
+            single origin, so on a very fast line this can read lower than a multi-server test like
+            speedtest.net.
           </p>
           <div className="mt-2 flex items-center gap-2 border-t border-edge-soft pt-2 text-[11px] text-ink-subtle">
             <span className="h-1 w-1 rounded-full bg-ink-subtle/60" />
-            One test uses ~your speed × 7s of bandwidth
+            Uses up to 150 MB
             <span className="h-1 w-1 rounded-full bg-ink-subtle/60" />
-            60s cooldown
+            90s cooldown
           </div>
         </div>
       )}
@@ -120,6 +125,7 @@ function SpeedTestButtonInner() {
   const [state, setState] = useState<"idle" | "running" | "done" | "error">("idle");
   const [mbps, setMbps] = useState<number | null>(null);
   const [liveMbps, setLiveMbps] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number>(0);
   const [now, setNow] = useState<number>(Date.now());
 
@@ -137,64 +143,24 @@ function SpeedTestButtonInner() {
     setState("running");
     setLiveMbps(null);
 
-    const samples: Array<{ t: number; bytes: number }> = [];
-    let total = 0;
-    let cancelled = false;
-    const startedAt = performance.now();
+    const result = await runSpeedTest(setLiveMbps);
+    setLiveMbps(null);
 
-    const liveTimer = window.setInterval(() => {
-      const nowMs = performance.now();
-      const elapsed = nowMs - startedAt;
-      if (elapsed < SPEEDTEST_WARMUP_MS) return;
-      const cutoff = nowMs - 1500;
-      let recentBytes = 0;
-      let earliest = nowMs;
-      for (let i = samples.length - 1; i >= 0; i--) {
-        if (samples[i].t < cutoff) break;
-        recentBytes += samples[i].bytes;
-        earliest = samples[i].t;
-      }
-      const dt = (nowMs - earliest) / 1000;
-      if (dt > 0.2) setLiveMbps((recentBytes * 8) / 1_000_000 / dt);
-    }, 250);
-
-    const stream = async () => {
-      while (!cancelled && performance.now() - startedAt < SPEEDTEST_DURATION_MS) {
-        try {
-          const res = await fetch(`${SPEEDTEST_URL}&n=${Math.random()}`, { cache: "no-store" });
-          const reader = res.body?.getReader();
-          if (!reader) break;
-          while (!cancelled) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (performance.now() - startedAt > SPEEDTEST_DURATION_MS) {
-              cancelled = true;
-              reader.cancel().catch(() => {});
-              break;
-            }
-            const t = performance.now();
-            samples.push({ t, bytes: value.length });
-            if (t - startedAt >= SPEEDTEST_WARMUP_MS) total += value.length;
-          }
-        } catch {
-        }
-      }
-    };
-
-    try {
-      await Promise.all(Array.from({ length: SPEEDTEST_STREAMS }, stream));
-      window.clearInterval(liveTimer);
-      const measureSec = (SPEEDTEST_DURATION_MS - SPEEDTEST_WARMUP_MS) / 1000;
-      const result = (total * 8) / 1_000_000 / measureSec;
-      setMbps(result);
-      setLiveMbps(null);
+    if (result.ok) {
+      setMbps(result.mbps);
+      setError(null);
       setCooldownUntil(Date.now() + SPEEDTEST_COOLDOWN_MS);
       setNow(Date.now());
       setState("done");
-    } catch {
-      window.clearInterval(liveTimer);
-      setState("error");
+      return;
     }
+
+    setError(ERROR_COPY[result.reason]);
+    if (result.reason === "rate_limited") {
+      setCooldownUntil(Date.now() + SPEEDTEST_LIMITED_COOLDOWN_MS);
+      setNow(Date.now());
+    }
+    setState("error");
   };
 
   if (state === "running") {
@@ -207,13 +173,21 @@ function SpeedTestButtonInner() {
   }
   if (state === "error") {
     return (
-      <button
-        type="button"
-        onClick={run}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-danger/40 px-3 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-danger transition-colors hover:bg-danger/10"
-      >
-        Retry
-      </button>
+      <div className="flex shrink-0 items-center gap-2.5">
+        <span className="max-w-[260px] text-end text-[12px] leading-snug text-ink-subtle">{error}</span>
+        <button
+          type="button"
+          onClick={run}
+          disabled={cooling}
+          className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[11.5px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+            cooling
+              ? "cursor-not-allowed border-edge-soft text-ink-subtle"
+              : "border-danger/40 text-danger hover:bg-danger/10"
+          }`}
+        >
+          {cooling ? `${Math.ceil(cooldownRemaining / 1000)}s` : "Retry"}
+        </button>
+      </div>
     );
   }
   if (state === "idle") {

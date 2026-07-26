@@ -11,6 +11,7 @@ import { ColorPicker } from "./color-picker";
 import { Section } from "./shared";
 import { AvatarRing } from "./account/avatar-ring";
 import { resizeAvatar } from "./account/avatar-utils";
+import { ProfileAudioSetting } from "./profile-audio-setting";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
 import { ProfilesStrip } from "./account/profiles-strip";
 import { StartupDefaults } from "./account/startup-defaults";
@@ -271,6 +272,8 @@ export function AccountStub() {
           </div>
         )}
       </Section>
+
+      <ProfileAudioSetting />
 
       <Section
         title={t("Synced addons")}

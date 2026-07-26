@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CoverImg } from "@/components/cover-img";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
 import { collectionsForTitle } from "@/lib/manga/collections";
@@ -59,7 +60,7 @@ export function MangaAwardCorner({
     <>
       {shownPoster && (
         <span className="relative shrink-0">
-          <img
+          <CoverImg
             src={shownPoster}
             alt=""
             draggable={false}

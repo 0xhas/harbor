@@ -84,7 +84,6 @@ import { HarborNameSync } from "@/components/harbor-name-sync";
 import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
 import { TrackerProfileBridge } from "@/lib/tracker-profile-bridge";
 import { ProfilePickerModal } from "@/components/profile-picker/picker-modal";
-import { GroupDetailHost } from "@/components/group-detail-host";
 import { WatchlistSync } from "@/lib/watchlist-sync";
 import { ContextMenuProvider } from "@/lib/context-menu";
 import { TopRankModalProvider } from "@/lib/top-rank-modal";
@@ -169,6 +168,9 @@ const PersonView = lazy(() => importPerson().then((m) => ({ default: m.PersonVie
 const PeopleView = lazy(() => importPeople().then((m) => ({ default: m.PeopleView })));
 const ProfileView = lazy(() => import("@/views/profile/profile").then((m) => ({ default: m.ProfileView })));
 const SharedListView = lazy(() => import("@/views/shared-list").then((m) => ({ default: m.SharedListView })));
+const FeedView = lazy(() => import("@/views/feed").then((m) => ({ default: m.FeedView })));
+const GroupsView = lazy(() => import("@/views/groups").then((m) => ({ default: m.GroupsView })));
+const GroupView = lazy(() => import("@/views/group").then((m) => ({ default: m.GroupView })));
 const CollectionView = lazy(() => importCollection().then((m) => ({ default: m.CollectionView })));
 const AddonCollectionView = lazy(() => import("@/views/addon-collection").then((m) => ({ default: m.AddonCollectionView })));
 const EpisodeDetailView = lazy(() => importEpisodeDetail().then((m) => ({ default: m.EpisodeDetailView })));
@@ -373,7 +375,6 @@ export function App({ onReady }: { onReady?: () => void }) {
                       <CustomHoverCssMount />
                       <TopRankModal />
                       <ProfilePickerModal />
-                      <GroupDetailHost />
                       <CurfewGuard />
                       <SearchOverlay />
                       <SearchHotkey />
@@ -441,12 +442,37 @@ function ActivitySyncRunner() {
   return null;
 }
 
+const SESSION_REFRESH_MS = 6 * 60 * 60 * 1000;
+
 function SessionRefreshRunner() {
   useEffect(() => {
-    void refreshToken();
-    const onProfile = () => void refreshToken();
+    let last = 0;
+    const refresh = () => {
+      const now = Date.now();
+      if (now - last < 60000) return;
+      last = now;
+      void refreshToken();
+    };
+    refresh();
+    const onProfile = () => {
+      last = 0;
+      refresh();
+    };
+    const onWake = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const timer = window.setInterval(refresh, SESSION_REFRESH_MS);
     window.addEventListener("harbor:active-profile-changed", onProfile);
-    return () => window.removeEventListener("harbor:active-profile-changed", onProfile);
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("online", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("harbor:active-profile-changed", onProfile);
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("online", refresh);
+    };
   }, []);
   return null;
 }
@@ -576,7 +602,7 @@ function RevealOnMount({ onReady }: { onReady?: () => void }) {
 }
 
 function Shell({ onReady }: { onReady?: () => void }) {
-  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, profileHandle, listHandle, listId, openList, collectionId, addonCollectionMeta, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openManga, peopleInit, openPlayer, stackKinds, chromeHidden } = useView();
+  const { topKind, service, meta, metaLiveContext, metaEpisodeHint, episodeDetail, personId, profileHandle, feedOpen, groupsOpen, groupId, listHandle, listId, openList, collectionId, addonCollectionMeta, filter, grid, awardType, animeAwardSource, picker, player, setView, canGoBack, goBack, canGoForward, goForward, openMeta, openManga, peopleInit, openPlayer, stackKinds, chromeHidden } = useView();
   const { settings, update } = useSettings();
   const { setOpen: setSearchOpen } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
@@ -973,6 +999,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
   const profileTop = topKind === "profile";
+  const feedTop = topKind === "feed";
+  const groupsTop = topKind === "groups";
+  const groupTop = topKind === "group";
   const listTop = topKind === "list";
   const collectionTop = topKind === "collection";
   const addonCollectionTop = topKind === "addon-collection";
@@ -1050,6 +1079,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const detailAlive = useKeepAlive(detailTop, !!meta);
   const personAlive = useKeepAlive(personTop, personId !== null);
   const profileAlive = useKeepAlive(profileTop, profileHandle !== null);
+  const feedAlive = useKeepAlive(feedTop, feedOpen, stackKinds.includes("feed"));
+  const groupsAlive = useKeepAlive(groupsTop, groupsOpen, stackKinds.includes("groups"));
+  const groupAlive = useKeepAlive(groupTop, groupId !== null);
   const listAlive = useKeepAlive(listTop, listHandle !== null);
   const addonCollectionAlive = useKeepAlive(
     addonCollectionTop,
@@ -1276,6 +1308,27 @@ function Shell({ onReady }: { onReady?: () => void }) {
             </Suspense>
           </div>
         )}
+        {feedAlive && (
+          <div className={layer(feedTop)}>
+            <Suspense fallback={null}>
+              <FeedView onOpenProfile={requestOpenProfile} />
+            </Suspense>
+          </div>
+        )}
+        {groupsAlive && (
+          <div className={layer(groupsTop)}>
+            <Suspense fallback={null}>
+              <GroupsView />
+            </Suspense>
+          </div>
+        )}
+        {groupAlive && groupId !== null && (
+          <div className={layer(groupTop)}>
+            <Suspense fallback={null}>
+              <GroupView key={`group-${groupId}`} id={groupId} onOpenProfile={requestOpenProfile} />
+            </Suspense>
+          </div>
+        )}
         {listAlive && listHandle !== null && listId !== null && (
           <div className={layer(listTop)}>
             <Suspense fallback={null}>
@@ -1392,7 +1445,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
         />
-        {!immersive && (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && <Topbar />}
+        {!immersive &&
+          (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && <Topbar />}
         {!immersive && !playerActive && !pickerTop && layout === "custom" && (
           <div aria-hidden className="harbor-chrome-proxy fixed end-3 top-3 z-[40]">
             <TogetherButton />

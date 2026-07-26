@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { subscribeOpenProfile } from "@/lib/social/open-profile";
+import { subscribeOpenGroup } from "@/lib/social/open-group";
 import type { Meta } from "./cinemeta";
 import type { PeopleDept, RankSource } from "./harbor-rank";
 import { profileFromMeta, trackEvent } from "./discover";
@@ -108,6 +109,9 @@ export type Frame =
   | { kind: "episode-detail"; seriesId: string; season: number; episode: number; seriesMeta?: Meta }
   | { kind: "person"; id: number }
   | { kind: "profile"; handle: string }
+  | { kind: "feed" }
+  | { kind: "groups" }
+  | { kind: "group"; id: string }
   | { kind: "list"; handle: string; listId: string }
   | { kind: "collection"; id: number }
   | { kind: "collections" }
@@ -162,6 +166,12 @@ type ViewValue = {
   openPerson: (id: number | null) => void;
   profileHandle: string | null;
   openProfile: (handle: string) => void;
+  feedOpen: boolean;
+  openFeed: () => void;
+  groupsOpen: boolean;
+  openGroups: () => void;
+  groupId: string | null;
+  openGroup: (id: string) => void;
   listHandle: string | null;
   listId: string | null;
   openList: (handle: string, listId: string) => void;
@@ -277,6 +287,12 @@ function frameKey(f: Frame): string {
       return `person:${f.id}`;
     case "profile":
       return `profile:${f.handle}`;
+    case "feed":
+      return "feed";
+    case "groups":
+      return "groups";
+    case "group":
+      return `group:${f.id}`;
     case "list":
       return `list:${f.handle}:${f.listId}`;
     case "collection":
@@ -404,6 +420,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const personId = personFrame ? personFrame.id : null;
   const profileFrame = lastOfKind(stack, "profile");
   const profileHandle = profileFrame ? profileFrame.handle : null;
+  const feedOpen = !!lastOfKind(stack, "feed");
+  const groupsOpen = !!lastOfKind(stack, "groups");
+  const groupFrame = lastOfKind(stack, "group");
+  const groupId = groupFrame ? groupFrame.id : null;
   const listFrame = lastOfKind(stack, "list");
   const listHandle = listFrame ? listFrame.handle : null;
   const listId = listFrame ? listFrame.listId : null;
@@ -729,6 +749,33 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, [setNavStack]);
   useEffect(() => subscribeOpenProfile(openProfile), [openProfile]);
 
+  const openFeed = useCallback(() => {
+    setNavStack((cur) => {
+      const t = cur[cur.length - 1];
+      if (t.kind === "feed") return cur;
+      return pushFrame(cur, { kind: "feed" });
+    });
+  }, [setNavStack]);
+
+  const openGroups = useCallback(() => {
+    setNavStack((cur) => {
+      const t = cur[cur.length - 1];
+      if (t.kind === "groups") return cur;
+      return pushFrame(cur, { kind: "groups" });
+    });
+  }, [setNavStack]);
+
+  const openGroup = useCallback((id: string) => {
+    const g = id.trim();
+    if (!g) return;
+    setNavStack((cur) => {
+      const t = cur[cur.length - 1];
+      if (t.kind === "group" && t.id === g) return cur;
+      return pushFrame(cur, { kind: "group", id: g });
+    });
+  }, [setNavStack]);
+  useEffect(() => subscribeOpenGroup(openGroup), [openGroup]);
+
   const openList = useCallback((handle: string, listId: string) => {
     const h = handle.trim().toLowerCase();
     if (!h || !listId) return;
@@ -957,6 +1004,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openPerson,
       profileHandle,
       openProfile,
+      feedOpen,
+      openFeed,
+      groupsOpen,
+      openGroups,
+      groupId,
+      openGroup,
       listHandle,
       listId,
       openList,
@@ -1020,6 +1073,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       promoteMetaToRoot,
       personId,
       profileHandle,
+      feedOpen,
+      openFeed,
+      groupsOpen,
+      openGroups,
+      groupId,
+      openGroup,
       listHandle,
       listId,
       openList,

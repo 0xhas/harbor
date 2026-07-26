@@ -396,13 +396,17 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  label,
+  sub,
 }: {
   value: T;
   options: ReadonlyArray<{ value: T; label: string }>;
   onChange: (v: T) => void;
+  label?: string;
+  sub?: string;
 }) {
   const t = useT();
-  return (
+  const control = (
     <div className="flex w-fit flex-wrap gap-1 rounded-2xl bg-elevated/40 p-1 ring-1 ring-edge-soft/60">
       {options.map((o) => (
         <button
@@ -418,6 +422,14 @@ export function Segmented<T extends string>({
           {t(o.label)}
         </button>
       ))}
+    </div>
+  );
+  if (!label && !sub) return control;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && <span className="text-[13px] font-medium text-ink">{label}</span>}
+      {sub && <span className="max-w-[62ch] text-[12px] leading-snug text-ink-subtle">{sub}</span>}
+      {control}
     </div>
   );
 }

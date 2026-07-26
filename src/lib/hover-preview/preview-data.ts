@@ -8,6 +8,7 @@ import { resolveResume, type PreviewResume } from "./resume-index";
 import { previewMeta } from "./synopsis-cache";
 import { LATE_ART_SWAP_WINDOW_MS } from "./timing";
 
+import { releaseText } from "@/lib/release-info";
 export type PreviewArt = { mode: "backdrop" | "poster" | "plate"; src?: string };
 
 export type PreviewData = {
@@ -138,7 +139,7 @@ export function assemblePreviewData(meta: Meta): PreviewAssembly {
   const chip = deriveChip(meta);
   const rating = deriveRating(meta, isAnime);
   const contentRating = deriveContentRating(meta);
-  const year = meta.releaseInfo?.trim() ? meta.releaseInfo.trim() : null;
+  const year = releaseText(meta.releaseInfo).trim() || null;
   let length = isTt && meta.type === "series" ? null : deriveLength(meta);
   const genre = meta.genres?.[0] ?? null;
 

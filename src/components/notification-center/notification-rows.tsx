@@ -1,4 +1,5 @@
 import { ArrowDownToLine, Award, Check, LifeBuoy, MessageSquare, Star, UserPlus, Users, X } from "lucide-react";
+import { CoverImg } from "@/components/cover-img";
 import { useState } from "react";
 import type { CenterNotif } from "@/lib/social/notifications";
 import type { PendingRequest } from "@/lib/social/friends";
@@ -25,7 +26,7 @@ function iconFor(kind: string) {
   if (kind === "downloads") return ArrowDownToLine;
   if (kind === "stars") return Star;
   if (kind === "friend-request") return UserPlus;
-  if (kind === "group-added") return Users;
+  if (kind === "group-added" || kind === "group-post") return Users;
   if (kind === "badge-received") return Award;
   if (kind === "diagnostics-request") return LifeBuoy;
   return MessageSquare;
@@ -173,7 +174,7 @@ export function FeedRow({
         >
           <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-elevated/80 ring-1 ring-inset ring-white/[0.06]">
             {notif.cover ? (
-              <img src={notif.cover} alt="" className="h-full w-full object-cover" draggable={false} />
+              <CoverImg src={notif.cover} alt="" className="h-full w-full object-cover" draggable={false} />
             ) : (
               <Icon size={15} className={iconTint(notif.kind)} />
             )}
@@ -220,7 +221,7 @@ export function NotificationDetail({
       <div className="flex flex-col items-center gap-3.5 pt-3 text-center">
         <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-elevated">
           {notif.cover ? (
-            <img src={notif.cover} alt="" className="h-full w-full object-cover" draggable={false} />
+            <CoverImg src={notif.cover} alt="" className="h-full w-full object-cover" draggable={false} />
           ) : (
             <Icon size={26} className={iconTint(notif.kind)} strokeWidth={1.8} />
           )}

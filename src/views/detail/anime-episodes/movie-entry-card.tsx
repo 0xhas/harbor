@@ -3,7 +3,24 @@ import type { Meta } from "@/lib/cinemeta";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { useView } from "@/lib/view";
+import { useView, type PlayEpisode } from "@/lib/view";
+
+function entryPlayEpisode(ep: KitsuEpisode | undefined): PlayEpisode | undefined {
+  if (!ep) return undefined;
+  if (ep.streamId != null && ep.streamId.split(":").length < 3) return undefined;
+  return {
+    season: ep.seasonNumber || 1,
+    episode: ep.number,
+    name: ep.title,
+    still: ep.thumbnail ?? undefined,
+    overview: ep.synopsis || undefined,
+    kitsuStreamId: ep.streamId,
+    imdbId: ep.imdbId,
+    imdbSeason: ep.imdbSeason,
+    imdbEpisode: ep.imdbEpisode,
+    absoluteNumber: ep.absoluteNumber ?? ep.number,
+  };
+}
 
 export function MovieEntryCard({
   meta,
@@ -21,24 +38,7 @@ export function MovieEntryCard({
   return (
     <button
       onClick={() =>
-        openPicker(
-          meta,
-          ep
-            ? {
-                season: ep.seasonNumber || 1,
-                episode: ep.number,
-                name: ep.title,
-                still: ep.thumbnail ?? undefined,
-                overview: ep.synopsis || undefined,
-                kitsuStreamId: ep.streamId,
-                imdbId: ep.imdbId,
-                imdbSeason: ep.imdbSeason,
-                imdbEpisode: ep.imdbEpisode,
-                absoluteNumber: ep.absoluteNumber ?? ep.number,
-              }
-            : { season: 1, episode: 1 },
-          { autoPlay: settings.instantPlay },
-        )
+        openPicker(meta, entryPlayEpisode(ep), { autoPlay: settings.instantPlay })
       }
       className="group relative block h-[300px] w-full overflow-hidden rounded-2xl border border-edge-soft/50 text-start"
     >

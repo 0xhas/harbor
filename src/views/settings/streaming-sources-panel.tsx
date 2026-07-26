@@ -15,6 +15,7 @@ import {
   type ServiceHealth,
 } from "@/lib/streams/aiostatus";
 import { ExtLink, KeyField, Section, ToggleRow } from "./shared";
+import { AddonTimeoutSetting } from "./addon-timeout-setting";
 import { ManualAddonCard, ServiceCard } from "./streaming-panel";
 import { AioStatusModal } from "./aiostatus-modal";
 import { StreamFilterPreview } from "./stream-filter-preview";
@@ -66,6 +67,8 @@ export function StreamingSourcesPanel({
         />
         <StreamFilterPreview level={settings.streamFilterLevel} />
       </Section>
+
+      <AddonTimeoutSetting />
 
       <Section
         title={t("Picker layout")}

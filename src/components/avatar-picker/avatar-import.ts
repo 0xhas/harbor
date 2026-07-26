@@ -4,7 +4,6 @@ import type { AvatarPackItem } from "@/lib/avatars/packs";
 export type ImportEntry = { file: File; set: string | null };
 export type ImportGroup = { set: string | null; items: AvatarPackItem[] };
 
-const MAX_IMPORT = 400;
 const IMG_EXT = ["png", "jpg", "jpeg", "jfif", "webp", "gif", "bmp", "avif", "apng", "heic"];
 const IMG_RE = /\.(png|jpe?g|jfif|webp|gif|bmp|avif|apng|heic)$/i;
 
@@ -45,7 +44,6 @@ export function setSlug(name: string): string {
 export function entriesFromFileList(files: FileList | File[]): ImportEntry[] {
   return [...files]
     .filter((f) => f.type.startsWith("image/") || IMG_RE.test(f.name))
-    .slice(0, MAX_IMPORT)
     .map((file) => {
       const rel = (file as { webkitRelativePath?: string }).webkitRelativePath || "";
       const parts = rel.split("/").filter(Boolean);
@@ -72,7 +70,7 @@ export async function pickImagesNative(): Promise<ImportEntry[]> {
   const paths = Array.isArray(picked) ? picked : picked ? [picked] : [];
   const { readFile } = await import("@tauri-apps/plugin-fs");
   const out: ImportEntry[] = [];
-  for (const p of paths.slice(0, MAX_IMPORT)) {
+  for (const p of paths) {
     const file = await pathToFile(p, readFile);
     if (file) out.push({ file, set: null });
   }
@@ -90,7 +88,6 @@ export async function pickFolderNative(): Promise<ImportEntry[]> {
   const walk = async (path: string, set: string | null) => {
     const entries = await readDir(path).catch(() => [] as Awaited<ReturnType<typeof readDir>>);
     for (const e of entries) {
-      if (out.length >= MAX_IMPORT) return;
       const full = await join(path, e.name);
       if (e.isFile && IMG_RE.test(e.name)) {
         const file = await pathToFile(full, readFile);

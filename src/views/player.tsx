@@ -961,6 +961,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     gif,
     clip,
     loaderActive,
+    sourceFailed: sourceError != null,
     playerShellId: settings.playerShellId,
     shellSnap,
     snapRef,

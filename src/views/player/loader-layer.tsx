@@ -11,6 +11,7 @@ export const LoaderLayer = memo(function LoaderLayer({
   snap,
   isLocalSrc,
   forceShow,
+  sourceFailed,
   onCancel,
   engineStats,
   onShowingChange,
@@ -21,6 +22,7 @@ export const LoaderLayer = memo(function LoaderLayer({
   snap: PlayerSnapshot;
   isLocalSrc: boolean;
   forceShow: boolean;
+  sourceFailed: boolean;
   onCancel: () => void;
   engineStats: ComponentProps<typeof CinematicPlayerLoader>["engineStats"];
   onShowingChange: (showing: boolean) => void;
@@ -35,6 +37,7 @@ export const LoaderLayer = memo(function LoaderLayer({
           src={src}
           snap={snap}
           forceShow={forceShow}
+          failed={sourceFailed && !isLocalSrc && !isLiveSrc}
           onCancel={onCancel}
           engineStats={engineStats}
           onShowingChange={onShowingChange}

@@ -73,14 +73,14 @@ function read(): RatingMap {
   }
 }
 
-function write(map: RatingMap): void {
+function write(map: RatingMap): boolean {
   const key = activeRatingsKey();
   const payload = JSON.stringify(map);
-  const ok = setItemWithRecovery(key, payload);
-  if (!ok) {
+  let persisted = setItemWithRecovery(key, payload);
+  if (!persisted) {
     freeStorageSpace();
-    const retry = setItemWithRecovery(key, payload);
-    if (!retry) {
+    persisted = setItemWithRecovery(key, payload);
+    if (!persisted) {
       memoryFallback = map;
       console.warn("[ratings] localStorage exhausted, holding ratings in memory only");
     } else {
@@ -90,6 +90,15 @@ function write(map: RatingMap): void {
     memoryFallback = null;
   }
   for (const s of subs) s();
+  return persisted;
+}
+
+function slimmed(map: RatingMap, dropReviews: boolean): RatingMap {
+  const out: RatingMap = {};
+  for (const [k, v] of Object.entries(map)) {
+    out[k] = { ...v, poster: undefined, review: dropReviews ? undefined : v.review };
+  }
+  return out;
 }
 
 export function subscribeRatings(fn: () => void): () => void {
@@ -111,6 +120,18 @@ export function setRatingLocal(r: MyRating): void {
   const map = read();
   map[r.itemKey] = r;
   write(map);
+}
+
+export function setRatingsLocalBulk(list: MyRating[]): boolean {
+  if (list.length === 0) return true;
+  const map = read();
+  for (const r of list) map[r.itemKey] = r;
+  if (write(map)) return true;
+  if (write(slimmed(map, false))) return true;
+  if (write(slimmed(map, true))) return true;
+  memoryFallback = map;
+  for (const s of subs) s();
+  return false;
 }
 
 export function removeRatingLocal(itemKey: string): void {

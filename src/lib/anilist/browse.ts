@@ -66,6 +66,7 @@ const SEARCH_QUERY = `query ($q: String, $perPage: Int) {
     media(search: $q, type: ANIME, sort: SEARCH_MATCH) {
       id
       idMal
+      format
       title { romaji english }
       coverImage { extraLarge large }
       bannerImage
@@ -80,6 +81,7 @@ const SEARCH_QUERY = `query ($q: String, $perPage: Int) {
 export type AnilistSearchHit = {
   anilistId: number;
   malId: number | null;
+  format: string | null;
   name: string;
   year: string | null;
   poster: string | null;
@@ -91,6 +93,7 @@ export type AnilistSearchHit = {
 type SearchMedia = {
   id: number;
   idMal: number | null;
+  format: string | null;
   title: { romaji: string | null; english: string | null };
   coverImage: { extraLarge: string | null; large: string | null } | null;
   bannerImage: string | null;
@@ -112,6 +115,7 @@ export async function anilistAnimeSearch(query: string, perPage = 8): Promise<An
     return (data?.Page?.media ?? []).map((m) => ({
       anilistId: m.id,
       malId: m.idMal ?? null,
+      format: m.format ?? null,
       name: m.title.english?.trim() || m.title.romaji?.trim() || "Untitled",
       year: m.seasonYear ? String(m.seasonYear) : null,
       poster: m.coverImage?.extraLarge ?? m.coverImage?.large ?? null,

@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { LazyMount } from "@/components/lazy-mount";
 import { PickCard } from "@/components/pick-card";
-import { Row } from "@/components/row";
+import { Row, usePosterRow } from "@/components/row";
 import { RowControls } from "@/views/home/row-controls";
 import { useHideAnimeRows } from "@/lib/anime-hide";
 import type { Meta } from "@/lib/cinemeta";
@@ -68,7 +68,10 @@ export function CatalogRows({
   injectAfter?: number;
   injectNode?: React.ReactNode;
 }) {
+  const t = useT();
+  const { openGrid } = useView();
   const shown = useHideAnimeRows(rows);
+  const posterRow = usePosterRow(148, kids);
   const allKeys = useMemo(() => shown.map((r) => r.key), [shown]);
   const display = useMemo(() => applyPageRows(shown, custom, editMode), [shown, custom, editMode]);
   const orderKeys = useMemo(() => orderedRowKeys(allKeys, custom), [allKeys, custom]);
@@ -79,15 +82,19 @@ export function CatalogRows({
         if (hidden && !editMode) return null;
         const idx = orderKeys.indexOf(row.key);
         const eager = i < 2;
+        const viewAll = row.fetcher
+          ? () => openGrid({ title: t(row.title), fetcher: row.fetcher!, initial: row.metas })
+          : undefined;
         const rowEl = (
           <Row
             title={<RowTitle row={row} kids={kids} />}
             titleClassName={kids ? "text-[#0e3a43]" : "text-ink"}
             titleScale={kids ? 1.28 : 1}
-            min={148}
-            shape="portrait"
+            {...posterRow}
             scrollKey={`${scrollPrefix}:${row.key}`}
             onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
+            onViewAll={viewAll}
+            viewAllClassName={kids ? "text-[#0e3a43]/70 hover:text-[#1f8f88]" : undefined}
           >
             {row.metas.map((m) => (
               <PickCard key={m.id} meta={m} flagRerun={flagRerunKeys?.includes(row.key)} kids={kids} />

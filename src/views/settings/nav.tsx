@@ -611,7 +611,7 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         id: "theme",
         label: "Theme & appearance",
         Icon: IconTheme,
-        keywords: ["theme", "color", "font", "layout", "wallpaper", "card", "minui", "aurora", "velvet", "custom"],
+        keywords: ["theme", "color", "font", "layout", "wallpaper", "card", "minui", "aurora", "velvet", "custom", "tvos", "apple tv", "tv ui", "big screen"],
       },
       {
         id: "badges",
@@ -707,6 +707,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Harbor on other devices (web app)", section: "remotes", anchorTitle: "Harbor on other devices", keywords: ["harbor in browser", "web ui", "web app", "web version", "11471", "serve", "network", "tv browser", "laptop", "open on phone"] },
   { label: "Phone remote", section: "remotes", anchorTitle: "Phone remote", keywords: ["phone remote", "remote control", "couch", "control playback", "cast from phone", "pause from phone", "volume remote"] },
   { label: "Manga reader remote", section: "remotes", anchorTitle: "Manga reader remote", keywords: ["manga remote", "reader remote", "flipbook remote", "turn pages", "page turner", "manga phone"] },
+  { label: "Temporary files", section: "storage", anchorTitle: "Temporary files", keywords: ["temp", "temp files", "old updates", "installers", "appdata temp", "disk space", "ssd filling up", "trailers cache", "clear temp"] },
   { label: "Storage overview", section: "storage", anchorTitle: "Storage overview", keywords: ["storage", "usage", "quota", "space used", "disk", "how much space", "storage full"] },
   { label: "Clear caches", section: "storage", anchorTitle: "Clear caches", keywords: ["clear cache", "delete cache", "free up space", "picker cache", "manga cache", "live tv cache", "epg", "dead streams", "cleanup", "purge"] },
   { label: "Remote streaming server", section: "p2p", anchorTitle: "Remote streaming server", keywords: ["remote server", "server url", "ip address", "test connection", "forget server", "use exclusively", "strict", "vpn", "home server", "stremio service"] },
@@ -754,7 +755,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
 
   { label: "Watch Together relay", section: "relay", anchorTitle: "Harbor Relay", keywords: ["watch together", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"] },
 
-  { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "cool grey", "warm gold", "deep purple", "sunset orange", "rose pink", "custom theme", "palette", "dark", "appearance"] },
+  { label: "Theme preset", section: "theme", anchorTitle: "Theme", keywords: ["theme", "color", "preset", "cool grey", "warm gold", "deep purple", "sunset orange", "rose pink", "custom theme", "palette", "dark", "appearance", "tvos", "apple tv", "tv ui", "big screen"] },
   { label: "Background image / wallpaper", section: "theme", anchorTitle: "Background image", keywords: ["background", "wallpaper", "image", "choose image", "replace", "remove", "dim overlay"] },
   { label: "Typography & custom fonts", section: "theme", anchorTitle: "Typography", keywords: ["typography", "font", "display font", "body font", "serif", "sans", "font pair", "custom font", "fraunces", "inter", "upload font"] },
   { label: "Theme Studio / your themes", section: "theme", anchorTitle: "Your themes", keywords: ["theme studio", "custom theme", "editor", "browse theme library", "import theme", "your themes", "card css"] },
@@ -775,6 +776,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
 
   { label: "Harbor identity (avatar / color)", section: "account", anchorTitle: "Harbor identity", keywords: ["avatar", "profile photo", "upload photo", "color", "identity", "picture"] },
   { label: "Stremio account (email / sign out)", section: "account", anchorTitle: "Stremio account", keywords: ["stremio", "email", "sign out", "logout", "re-authenticate", "login", "account"] },
+  { label: "Profile songs", section: "account", anchorTitle: "Profile songs", keywords: ["profile song", "profile music", "autoplay music", "mute profile", "soundcloud", "spotify", "youtube music", "stop music", "audio"] },
   { label: "Synced addons", section: "account", anchorTitle: "Synced addons", keywords: ["synced addons", "addons", "stremio addons", "installed addons"] },
 
   { label: "Trakt connection", section: "trakt", keywords: ["trakt", "scrobble", "sync", "watchlist", "connect", "disconnect", "avatar", "history"] },
@@ -921,6 +923,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Deploy mine instead", section: "relay", anchorTitle: "Harbor Relay", keywords: ["own relay", "deploy mine", "self host", "migrate"] },
   { label: "Redeploy", section: "relay", anchorTitle: "Harbor Relay", keywords: ["redeploy", "update relay", "upgrade", "new version", "redeploy instructions"] },
   { label: "Documentation: run your own relay", section: "relay", anchorTitle: "Harbor Relay", keywords: ["docs", "documentation", "guide", "run your own", "instructions"] },
+  { label: "Addon wait time", section: "streaming", anchorTitle: "Addon wait time", keywords: ["addon timeout", "wait time", "streams not loading", "slow addon", "penguplay", "no streams", "refresh streams", "stream timeout"] },
   { label: "Picker layout", section: "streaming", anchorTitle: "Picker layout", keywords: ["condensed", "stremio layout", "picker style", "flat list", "quality tiles", "drawer", "source list"] },
   { label: "Show torrent name", section: "streaming", anchorTitle: "Torrent name", keywords: ["torrent name", "filename", "release name", "raw title", "release filename"] },
   { label: "Show full descriptions", section: "streaming", anchorTitle: "Stream descriptions", keywords: ["full description", "aiostreams", "stream info", "trim", "tidier rows", "addon description"] },
@@ -1255,8 +1258,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   { label: "Use free IMDb data without a TMDB key", section: "library", anchorTitle: "Metadata providers", keywords: ["imdb fallback","free imdb","no tmdb key","imdb data","cast crew","about panel","imdb source"] },
   { label: "Song ID provider (AudD / Gemini)", section: "library", anchorTitle: "Metadata providers", keywords: ["song id provider","audd","gemini","music recognition provider","identify song source","shazam alternative"] },
   { label: "Gemini · in-player song ID", section: "library", anchorTitle: "Metadata providers", keywords: ["gemini","google gemini","song id key","music id","gemini api key","aistudio","identify song"] },
-  { label: "Award tab across the bottom", section: "library", anchorTitle: "Metadata providers", keywords: ["award tab","laurel","netflix award","award banner","winner tab","awards bottom"] },
-  { label: "Award tab position", section: "library", anchorTitle: "Metadata providers", keywords: ["award tab position","above ratings","below ratings","award placement","laurel position"] },
+  { label: "Award tab on cards", section: "library", anchorTitle: "Metadata providers", keywords: ["award tab","laurel","netflix award","award banner","winner tab","awards bottom"] },
+  { label: "Award tab position", section: "library", anchorTitle: "Metadata providers", keywords: ["award tab position","above ratings","below ratings","top of card","award on top","award placement","laurel position"] },
   { label: "Top 10 ribbon", section: "library", anchorTitle: "Metadata providers", keywords: ["top 10 ribbon","top ten","corner ribbon","top10","ribbon badge","rank ribbon"] },
   { label: "Ribbon corner", section: "library", anchorTitle: "Metadata providers", keywords: ["ribbon corner","top left","top right","ribbon side","ribbon placement"] },
   { label: "Show DUB badge on anime cards", section: "library", anchorTitle: "Metadata providers", keywords: ["dub badge","anime dub","english dub","sub dub","dual audio","dubbed anime","dub sub tag"] },

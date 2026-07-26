@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, Globe, ImagePlus, KeyRoun
 import { exportThemeJson, getCustomThemes, type CustomTheme } from "@/lib/custom-themes";
 import { currentAuthor, subscribeAuthor, type Author } from "@/lib/theme-auth";
 import { recordUpload, uploadTheme } from "@/lib/theme-store";
+import { optimizeBackgroundForShare } from "../image-utils";
 import { CheatSheet } from "../theme-studio/cheat-sheet";
 import { AuthorAccountPanel } from "./author-account-panel";
 import { AuthorIdentity } from "./author-identity";
@@ -80,6 +81,10 @@ export function ThemeUploadFlow({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       const payload = { ...theme, name: name.trim() || theme.name, blurb: blurb.trim() };
+      if (payload.background?.image) {
+        const slim = await optimizeBackgroundForShare(payload.background.image);
+        payload.background = { ...payload.background, image: slim };
+      }
       const json = exportThemeJson(payload);
       const res = await uploadTheme(json, coverBlob, shots.map((s) => s.blob), author.trim());
       recordUpload({ id: res.id, ownerToken: res.ownerToken, name: payload.name, share: res.share });

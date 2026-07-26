@@ -1,4 +1,5 @@
 import { ArrowDownToLine, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { CoverImg } from "@/components/cover-img";
 import { useEffect, useRef, useState } from "react";
 import { BackToTop } from "@/components/back-to-top";
 import { useMangaDownloadsCount } from "@/lib/manga-downloads";
@@ -345,13 +346,13 @@ export function MangaView() {
       >
         <span className="relative grid h-12 w-16 shrink-0 place-items-center">
           <span className="absolute h-10 w-7 -translate-x-2.5 -rotate-[18deg] overflow-hidden rounded-[5px] bg-elevated shadow-[0_4px_10px_-4px_rgba(0,0,0,0.6)] ring-1 ring-edge-soft transition-transform duration-300 ease-out group-hover:-translate-x-4 group-hover:-rotate-[28deg]">
-            {featured[1]?.cover && <img src={featured[1].cover} alt="" className="h-full w-full object-cover" />}
+            {featured[1]?.cover && <CoverImg src={featured[1].cover} alt="" className="h-full w-full object-cover" />}
           </span>
           <span className="absolute h-10 w-7 translate-x-2.5 rotate-[18deg] overflow-hidden rounded-[5px] bg-raised shadow-[0_4px_10px_-4px_rgba(0,0,0,0.6)] ring-1 ring-edge-soft transition-transform duration-300 ease-out group-hover:translate-x-4 group-hover:rotate-[28deg]">
-            {featured[2]?.cover && <img src={featured[2].cover} alt="" className="h-full w-full object-cover" />}
+            {featured[2]?.cover && <CoverImg src={featured[2].cover} alt="" className="h-full w-full object-cover" />}
           </span>
           <span className="absolute h-10 w-7 overflow-hidden rounded-[5px] bg-gradient-to-br from-accent to-accent/60 shadow-[0_6px_14px_-4px_rgba(0,0,0,0.7)] ring-1 ring-white/10 transition-transform duration-300 ease-out group-hover:-translate-y-1">
-            {featured[0]?.cover && <img src={featured[0].cover} alt="" className="h-full w-full object-cover" />}
+            {featured[0]?.cover && <CoverImg src={featured[0].cover} alt="" className="h-full w-full object-cover" />}
           </span>
         </span>
         <div className="flex min-w-0 flex-1 flex-col">

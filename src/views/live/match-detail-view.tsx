@@ -3,24 +3,34 @@ import { ArrowLeft } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { fetchMatchSummary, type SportsGame, type SportsMatchDetail } from "@/lib/sports/espn";
+import { TennisMatchPanel } from "./match-detail-view/tennis-match-panel";
 
 export function MatchDetailView({ game }: { game: SportsGame }) {
   const t = useT();
   const { goBack } = useView();
   const [detail, setDetail] = useState<SportsMatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"summary" | "lineups" | "stats" | "profile">("summary");
   const isCombat = game.league === "UFC";
   const isTennis = game.league === "ATP" || game.league === "WTA";
+  const tabs = isCombat
+    ? (["summary", "profile", "stats"] as const)
+    : isTennis
+      ? (["match"] as const)
+      : (["summary", "lineups", "stats"] as const);
+  const [tab, setTab] = useState<"summary" | "lineups" | "stats" | "profile" | "match">(tabs[0]);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchMatchSummary(game.league, game.id).then((res) => {
-      if (!active) return;
-      if (res) setDetail(res);
-      setLoading(false);
-    });
+    fetchMatchSummary(game.league, game.id)
+      .then((res) => {
+        if (!active) return;
+        if (res) setDetail(res);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
     return () => { active = false; };
   }, [game]);
 
@@ -94,13 +104,12 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
       </div>
 
       {/* Tabs */}
-      <div className="mx-auto mt-8 flex w-full max-w-4xl shrink-0 gap-6 border-b border-edge-soft/50 px-6">
-        {(isCombat
-          ? (["summary", "profile", "stats"] as const)
-          : isTennis
-            ? (["summary", "stats"] as const)
-            : (["summary", "lineups", "stats"] as const)
-        ).map((tId) => (
+      <div
+        className={`mx-auto mt-8 flex w-full max-w-4xl shrink-0 gap-6 border-b border-edge-soft/50 px-6 ${
+          tabs.length > 1 ? "" : "hidden"
+        }`}
+      >
+        {tabs.map((tId) => (
           <button
             key={tId}
             onClick={() => setTab(tId)}
@@ -126,6 +135,7 @@ export function MatchDetailView({ game }: { game: SportsGame }) {
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {tab === "match" && <TennisMatchPanel detail={detail} />}
             {tab === "summary" && <SummaryTab detail={detail} />}
             {tab === "lineups" && <LineupsTab detail={detail} />}
             {tab === "stats" && <StatsTab detail={detail} />}

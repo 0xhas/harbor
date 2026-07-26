@@ -1,5 +1,5 @@
 import { UserPlus, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { AddFriendsModal } from "./add-friends-modal";
 import { Avatar } from "./profile-bits";
@@ -30,10 +30,12 @@ export function FriendsPanel({
   friends,
   onOpen,
   isOwner = false,
+  total,
 }: {
   friends: Friend[];
   onOpen?: (h: string) => void;
   isOwner?: boolean;
+  total?: number;
 }) {
   const t = useT();
   const [addOpen, setAddOpen] = useState(false);
@@ -45,6 +47,14 @@ export function FriendsPanel({
   const vOnline = visible.filter((f) => f.online);
   const vOffline = visible.filter((f) => !f.online);
   const remaining = ordered.length - visible.length;
+  const paginated = ordered.length > FRIENDS_PAGE;
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [lockH, setLockH] = useState<number | null>(null);
+  useEffect(() => {
+    if (lockH != null || !paginated) return;
+    const h = listRef.current?.getBoundingClientRect().height ?? 0;
+    if (h > 0) setLockH(h);
+  }, [lockH, paginated, friends.length]);
   const mutual = friends.filter((f) => f.mutual);
   return (
     <section aria-label={t("Friends")} className="rounded-[14px] bg-surface p-4 ring-1 ring-edge-soft">
@@ -62,7 +72,7 @@ export function FriendsPanel({
             </button>
           )}
           <span className="text-[12px] tabular-nums text-ink-subtle">
-            <span className="text-success">{online.length}</span> / {friends.length}
+            <span className="text-success">{online.length}</span> / {total ?? friends.length}
           </span>
         </div>
       </div>
@@ -88,7 +98,9 @@ export function FriendsPanel({
         </p>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="harbor-scroll flex max-h-[440px] flex-col gap-0.5 overflow-y-auto pe-0.5">
+          <div ref={listRef}
+            style={lockH != null ? { height: lockH } : undefined}
+            className="harbor-scroll flex max-h-[440px] flex-col gap-0.5 overflow-y-auto pe-0.5">
             {vOnline.length > 0 && (
               <div className="px-2 pb-1 pt-0.5 text-[11px] uppercase tracking-[0.1em] text-success">
                 {t("Online now")}

@@ -4,6 +4,7 @@ import { scrollToDataEp } from "@/lib/episode-scroll";
 import { type FranchiseEntry } from "@/lib/providers/anime-detail";
 import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
+import { effectiveOrderProvider, tvdbPanelEnabled } from "@/lib/settings/episode-order";
 import { useView } from "@/lib/view";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
@@ -139,7 +140,7 @@ export function AnimeEpisodes({
     imdbId ?? null,
     meta.id,
     episodes,
-    settings.episodeOrderProvider,
+    effectiveOrderProvider(settings),
     settings.tvdbSeasonType,
     settings.tvdbKey,
     preferredSeasonKey ?? undefined,
@@ -178,7 +179,7 @@ export function AnimeEpisodes({
     episodes,
     settings.tvdbSeasonType,
     settings.tvdbKey,
-    settings.tvdbOrderPanel,
+    tvdbPanelEnabled(settings),
     panelPool,
     preferredSeasonKey ?? undefined,
     intentSeasonKey ?? undefined,
@@ -265,7 +266,7 @@ export function AnimeEpisodes({
     setWatchedMenu({ x: e.clientX, y: e.clientY, season, episode, watched, metaId: sourceMetaId });
   };
 
-  const { progressFor, nextUpNum, spoilerFor, allWatched } = useAnimeProgressMap({
+  const { progressFor, nextUpNum, nextUpId, spoilerFor, allWatched } = useAnimeProgressMap({
     episodes,
     displayEpisodes,
     metaId: meta.id,
@@ -298,8 +299,9 @@ export function AnimeEpisodes({
     [orderedEpisodes.length],
   );
   const reveal = useCallback(
-    (n: number) => {
-      const idx = orderedEpisodes.findIndex((e) => e.number === n);
+    (n: number, epId?: number | null) => {
+      const byId = epId != null ? orderedEpisodes.findIndex((e) => e.id === epId) : -1;
+      const idx = byId >= 0 ? byId : orderedEpisodes.findIndex((e) => e.number === n);
       const target = idx >= 0 ? idx : n;
       setRenderCount((c) => Math.max(c, Math.min(orderedEpisodes.length, target + 20)));
     },
@@ -352,13 +354,13 @@ export function AnimeEpisodes({
   useEffect(() => {
     if (order || tvdbPanel.panel) return;
     if (nextUpNum == null || didJumpRef.current === meta.id) return;
-    const idx = episodes.findIndex((ep) => ep.number === nextUpNum);
+    const idx = episodes.findIndex((ep) => ep.id === nextUpId);
     if (idx < 12) return;
     didJumpRef.current = meta.id;
     if ((scrollRef.current?.scrollTop ?? 0) > 240) return;
-    reveal(nextUpNum);
-    scrollToDataEp(scrollRef.current, nextUpNum, { behavior: "auto", center: true });
-  }, [nextUpNum, episodes, meta.id, reveal, scrollRef]);
+    reveal(nextUpNum, nextUpId);
+    scrollToDataEp(scrollRef.current, nextUpNum, { behavior: "auto", center: true, epId: nextUpId });
+  }, [nextUpNum, nextUpId, episodes, meta.id, reveal, scrollRef]);
 
   const isOneOff = meta.type === "movie" || episodes.length <= 1;
   const downloadEpisodes = useMemo(

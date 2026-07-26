@@ -104,6 +104,15 @@ function sameShow(a: string, b: string): boolean {
   return x.length > 0 && x === normShow(b);
 }
 
+function animeKindFromFormat(
+  format: string | null,
+  fallback: "movie" | "series",
+): "movie" | "series" {
+  const fmt = (format ?? "").toUpperCase();
+  if (!fmt) return fallback;
+  return fmt === "MOVIE" ? "movie" : "series";
+}
+
 function loadRecent(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY);
@@ -286,17 +295,20 @@ export function SearchProvider({ children }: { children: ReactNode }) {
           .map((g) => ({ ...g, metas: dropAnime(g.metas.filter((m) => !shown.has(m.id))) }))
           .filter((g) => g.metas.length > 0);
         const animeTop = acc.anime[0];
+        const animeTopKind: "movie" | "series" = animeTop
+          ? animeKindFromFormat(animeTop.format, base.topMatch?.kind ?? "series")
+          : "series";
         const topMatch =
           animeTop && base.topMatch && sameShow(base.topMatch.meta.name, animeTop.name)
             ? {
-                kind: "series" as const,
+                kind: animeTopKind,
                 meta: {
                   id: animeTop.kitsuId
                     ? `kitsu:${animeTop.kitsuId}`
                     : animeTop.malId
                       ? `mal:${animeTop.malId}`
                       : `anilist:${animeTop.anilistId}`,
-                  type: "series" as const,
+                  type: animeTopKind,
                   name: animeTop.name,
                   poster: animeTop.poster ?? base.topMatch.meta.poster,
                   background: animeTop.background ?? undefined,

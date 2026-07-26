@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, BookOpen, Loader2, UploadCloud, X } from "lucide-react";
 import { exportThemeJson, getCustomThemes, type CustomTheme } from "@/lib/custom-themes";
+import { optimizeBackgroundForShare } from "../image-utils";
 import { updateTheme, type StoreTheme } from "@/lib/theme-store";
 import { CheatSheet } from "../theme-studio/cheat-sheet";
 import { CoverCropper } from "./theme-upload/cover-cropper";
@@ -72,7 +73,10 @@ export function ThemeUpdateFlow({
     setSubmitting(true);
     setError(null);
     try {
-      const json = exportThemeJson(theme);
+      const shared: CustomTheme = theme.background?.image
+        ? { ...theme, background: { ...theme.background, image: await optimizeBackgroundForShare(theme.background.image) } }
+        : theme;
+      const json = exportThemeJson(shared);
       const updated = await updateTheme(target.id, json, coverBlob, shots.map((s) => s.blob), changelog.trim());
       setResult({ share: updated.share });
     } catch (e) {

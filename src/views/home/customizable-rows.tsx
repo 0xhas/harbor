@@ -1,8 +1,9 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import { LazyMount } from "@/components/lazy-mount";
+import { releaseYear } from "@/lib/release-info";
 import { PickCard } from "@/components/pick-card";
-import { Row } from "@/components/row";
+import { Row, usePosterRow } from "@/components/row";
 import { CustomSourcesRow } from "@/components/custom-sources-row";
 import { TopRankCard } from "@/components/top-rank-card";
 import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
@@ -31,7 +32,7 @@ function isUnreleased(m: { releaseDate?: string; releaseInfo?: string }): boolea
     const t = Date.parse(m.releaseDate);
     if (!Number.isNaN(t)) return t > Date.now();
   }
-  const yr = m.releaseInfo ? Number.parseInt(m.releaseInfo.slice(0, 4), 10) : NaN;
+  const yr = releaseYear(m.releaseInfo);
   if (!Number.isNaN(yr)) return yr > new Date().getFullYear();
   return false;
 }
@@ -134,6 +135,7 @@ export function CustomizableRows({
 }) {
   const { openGrid } = useView();
   const t = useT();
+  const posterRow = usePosterRow();
   const { settings } = useSettings();
   const hideUnreleased = settings.hideUnreleased;
   const watchedTitleKeys = useMemo(() => {
@@ -202,6 +204,7 @@ export function CustomizableRows({
         } else {
           rowEl = (
             <Row
+              {...posterRow}
               title={<RowTitle row={row} />}
               titleExtra={<RowTitleExtra row={row} />}
               scrollKey={`home:${row.key}`}

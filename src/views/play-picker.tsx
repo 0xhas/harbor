@@ -82,17 +82,11 @@ export function PlayPicker({
   attempt?: number;
   intent?: "play" | "download";
   resume?: boolean;
-  // True when a player is open below the picker (playback -> picker). When the
-  // picker was opened from a detail page there is no player, and we must not
-  // leave app fullscreen on back (#1021).
   playerActive?: boolean;
 }) {
   const isDownload = intent === "download";
   const { openPlayer, openSettings, exitPickerToDetail, setView } = useView();
   const backToDetail = () => {
-    // Only leave fullscreen when backing out of active playback. Fullscreen is
-    // already released by the player-close path (App.tsx / use-player-exit);
-    // the picker must not exit it for the detail -> picker flow.
     if (playerActive) void exitWindowFullscreen();
     exitPickerToDetail(meta);
   };

@@ -1,6 +1,7 @@
 import { safeFetch } from "@/lib/safe-fetch";
 import { mangaThrottle, type MangaSummary } from "@/lib/manga/types";
 import { normalizeSuwayomiBase } from "./base-url";
+import { registerSuwayomiAuth, suwayomiAuthFor } from "./auth-registry";
 
 export type SuwayomiServer = {
   base: string;
@@ -74,7 +75,8 @@ export function makeServer(baseUrl: string, basicAuth?: string): SuwayomiServer 
     user = basicAuth.slice(0, at);
     pass = basicAuth.slice(at + 1);
   }
-  const authHeader = user ? `Basic ${btoa(`${user}:${pass ?? ""}`)}` : undefined;
+  const authHeader = user ? `Basic ${btoa(`${user}:${pass ?? ""}`)}` : suwayomiAuthFor(base);
+  registerSuwayomiAuth(base, authHeader);
   return { base, user, pass, authHeader };
 }
 

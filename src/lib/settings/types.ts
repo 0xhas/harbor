@@ -60,6 +60,8 @@ export interface SimklGranularFilters {
   };
 }
 
+export type ProfileAudioMode = "auto" | "click" | "off";
+
 export type Settings = {
   soundTheme: "none" | "glass" | "modern" | "retro" | "cinematic";
   sfxVolume: number;
@@ -124,7 +126,7 @@ export type Settings = {
   top10Ribbon: boolean;
   top10RibbonSide: "left" | "right";
   awardTabs: boolean;
-  awardTabPosition: "above" | "below";
+  awardTabPosition: "above" | "below" | "top";
   rowTitleScale: number;
   playerTitleScale: number;
   playerTitleSeriesFirst: boolean;
@@ -304,6 +306,9 @@ export type Settings = {
   hoverPreviewEnabled: boolean;
   hoverPreviewPlacement: "over" | "side";
   cardHoverStyle: "none" | "default" | "marquee" | "elegant" | "frosted" | "cinema" | "spotlight" | "custom";
+  rowCardStyle: "poster" | "tv";
+  tvCardLogoPos: "center" | "bottomStart" | "bottomEnd";
+  scrollUpTrailer: boolean;
   cardHoverShine: boolean;
   customHoverId: string;
   mdblistKey: string;
@@ -424,6 +429,8 @@ export type Settings = {
   animePicksDismissedAt: number;
   animeAnilistRowsHidden: string[];
   animeMalRowsHidden: string[];
+  addonTimeoutSec: number;
+  profileAudio: ProfileAudioMode;
   syncIndicator: boolean;
   syncIndicatorPosition: SyncIndicatorPosition;
   pickerLayout: "condensed" | "stremio";

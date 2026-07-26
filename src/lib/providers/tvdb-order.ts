@@ -85,6 +85,7 @@ async function build(
   }
 
   const bySeason = new Map<number, Episode[]>();
+  const altBySeason = new Map<number, Array<{ season: number; episode: number }>>();
   const seenEpisodeId = new Set<number>();
   for (const e of altEps) {
     if (seenEpisodeId.has(e.id)) continue;
@@ -93,6 +94,9 @@ async function build(
     if (joinedClean && c.season < 1) continue;
     const bucketKey = joinedClean || rawAbsolute ? 1 : e.seasonNumber;
     const bucket = bySeason.get(bucketKey) ?? [];
+    const altBucket = altBySeason.get(bucketKey) ?? [];
+    altBucket.push({ season: e.seasonNumber, episode: e.number });
+    altBySeason.set(bucketKey, altBucket);
     const tr = transById.get(e.id);
     bucket.push({
       id: e.id,
@@ -107,6 +111,18 @@ async function build(
       voteAverage: null,
     });
     bySeason.set(bucketKey, bucket);
+  }
+  for (const [key, bucket] of bySeason) {
+    const keys = bucket.map((x) => `${x.seasonNumber}:${x.episodeNumber}`);
+    if (new Set(keys).size === keys.length) continue;
+    const alt = altBySeason.get(key);
+    if (!alt || alt.length !== bucket.length) continue;
+    const altKeys = alt.map((x) => `${x.season}:${x.episode}`);
+    if (new Set(altKeys).size !== altKeys.length) continue;
+    bucket.forEach((ep, i) => {
+      ep.seasonNumber = alt[i].season;
+      ep.episodeNumber = alt[i].episode;
+    });
   }
   if (bySeason.size === 0) return null;
   if (joinedClean) {

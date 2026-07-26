@@ -47,14 +47,16 @@ export type SongIdOptions = {
 };
 
 function showResult(res: SongResult): void {
-  if (!res) {
+  const head = res ? res.title || res.artist : "";
+  if (!res || !head) {
     toast({ kind: "error", title: "Couldn't identify the song" });
     return;
   }
+  const sub = res.title ? [res.artist, res.album].filter(Boolean).join(" · ") : res.album;
   toast({
     kind: "result",
-    title: res.title,
-    body: `${res.artist}${res.album ? " · " + res.album : ""}`,
+    title: head,
+    body: sub || undefined,
     art: res.artwork || undefined,
     href: youtubeSearchUrl(res.artist, res.title),
   });
@@ -85,7 +87,12 @@ export async function identifyNowPlaying(opts: SongIdOptions): Promise<void> {
     showResult(res);
   } catch (e) {
     console.error("song-id failed", e);
-    toast({ kind: "error", title: "Song identification failed" });
+    const detail = typeof e === "string" ? e : ((e as Error)?.message ?? String(e));
+    toast({
+      kind: "error",
+      title: "Song identification failed",
+      body: detail.trim().slice(0, 260) || undefined,
+    });
   } finally {
     busy = false;
   }

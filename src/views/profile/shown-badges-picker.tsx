@@ -1,5 +1,5 @@
 import { Award, Check, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { socialPost } from "@/lib/social/client";
 import { useT } from "@/lib/i18n";
 import { badgeKey, SHOWN_BADGE_KEY_RE } from "./badge-catalog";
@@ -24,13 +24,17 @@ function BadgeOption({
   order,
   disabled,
   onToggle,
+  selected: selectedOverride,
+  mark,
 }: {
   badge: Badge;
   order: number;
   disabled: boolean;
   onToggle: () => void;
+  selected?: boolean;
+  mark?: ReactNode;
 }) {
-  const selected = order > 0;
+  const selected = selectedOverride ?? order > 0;
   return (
     <button
       onClick={onToggle}
@@ -42,7 +46,7 @@ function BadgeOption({
     >
       {selected && (
         <span className="absolute end-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent text-[11px] font-bold tabular-nums text-canvas">
-          {order}
+          {mark ?? order}
         </span>
       )}
       <div className="flex h-14 w-14 items-center justify-center">
@@ -65,16 +69,20 @@ function BadgeOption({
 export function ShownBadgesPicker({
   badges,
   current,
+  hideVerified = false,
   onClose,
   onSaved,
 }: {
   badges: Badge[];
   current: string[];
+  hideVerified?: boolean;
   onClose: () => void;
   onSaved: (next: ProfileSummary) => void;
 }) {
   const t = useT();
   const options = useMemo(() => pickableBadges(badges), [badges]);
+  const verifiedBadge = useMemo(() => badges.find((b) => badgeKey(b.name) === "verified"), [badges]);
+  const [showVerified, setShowVerified] = useState(!hideVerified);
   const [selected, setSelected] = useState<string[]>(() => {
     const valid = new Set(options.map((b) => badgeKey(b.name)));
     const out: string[] = [];
@@ -99,7 +107,9 @@ export function ShownBadgesPicker({
     setSaving(true);
     setError(null);
     try {
-      const next = await socialPost<ProfileSummary>("/social/profile/customization", { shownBadges: selected });
+      const body: Record<string, unknown> = { shownBadges: selected };
+      if (verifiedBadge) body.hideVerified = !showVerified;
+      const next = await socialPost<ProfileSummary>("/social/profile/customization", body);
       onSaved(next);
       onClose();
     } catch (e) {
@@ -128,7 +138,7 @@ export function ShownBadgesPicker({
           <p className="pb-3 text-[13px] text-ink-muted">
             {t("Pick up to {max} badges to show by your name. Tap in the order you want them to appear.", { max: MAX_SHOWN_BADGES })}
           </p>
-          {options.length === 0 ? (
+          {options.length === 0 && !verifiedBadge ? (
             <div className="flex flex-col items-center justify-center rounded-[10px] border border-dashed border-edge py-12 text-center">
               <Award size={24} className="text-ink-subtle" />
               <p className="mt-2 text-[14px] text-ink-muted">{t("No badges to show yet")}</p>
@@ -136,6 +146,17 @@ export function ShownBadgesPicker({
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+              {verifiedBadge && (
+                <BadgeOption
+                  key={verifiedBadge.id}
+                  badge={verifiedBadge}
+                  order={0}
+                  selected={showVerified}
+                  mark={<Check size={12} strokeWidth={3.2} />}
+                  disabled={false}
+                  onToggle={() => setShowVerified((v) => !v)}
+                />
+              )}
               {options.map((b) => {
                 const key = badgeKey(b.name);
                 return (

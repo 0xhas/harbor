@@ -70,6 +70,7 @@ export type PipelineInput = {
   score: ScoreOptions;
   isAnime?: boolean;
   presetStreams?: Stream[];
+  addonTimeoutMs?: number;
 };
 
 export type DebridError = { slug: string; name: string; code: string };
@@ -122,7 +123,7 @@ export async function runPipeline(
     }),
     presets.length > 0
       ? Promise.resolve(presets)
-      : fetchAddonStreams(input.addons, input.request, signal, emitPartial, onAddonProgress),
+      : fetchAddonStreams(input.addons, input.request, signal, emitPartial, onAddonProgress, input.addonTimeoutMs),
   ]);
   if (librarySettled.status === "fulfilled") library = librarySettled.value;
   const addonStreams = addonSettled.status === "fulfilled" ? addonSettled.value : [];

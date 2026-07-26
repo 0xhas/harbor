@@ -39,6 +39,7 @@ mod airplay;
 mod settings_store;
 mod shaders;
 mod song_id;
+mod song_id_gemini;
 mod stream_proxy;
 mod streams;
 mod stremio_auth;
@@ -47,6 +48,7 @@ mod subsync;
 mod svp;
 mod thumbs;
 mod torrent_engine;
+mod temp_prune;
 mod trailer;
 mod transcode;
 mod tray;
@@ -435,6 +437,7 @@ pub fn run() {
     mpv_render_linux::configure_nvidia_graphics();
     let _ = rustls::crypto::ring::default_provider().install_default();
     trailer::sweep_cache();
+    std::thread::spawn(temp_prune::sweep_temp);
     let proxy_state = tauri::async_runtime::block_on(stream_proxy::ProxyState::start())
         .unwrap_or_else(|e| {
             eprintln!("[stream-proxy] failed to start: {}", e);
@@ -670,6 +673,8 @@ pub fn run() {
             diagnostics::diagnostics_collect,
             diagnostics::diagnostics_cleanup,
             trailer::fetch_trailer,
+            temp_prune::temp_usage_bytes,
+            temp_prune::temp_clear,
             download::download_start,
             download::download_cancel,
             stream_proxy::proxy_register,

@@ -161,6 +161,8 @@ function labelForLayout(l?: string): string {
       return "Forest sidebar";
     case "royal":
       return "Royal top bar";
+    case "cinematic":
+      return "Cinematic overlay";
     case "custom":
       return "Custom chrome";
     default:

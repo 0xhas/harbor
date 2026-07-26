@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Settings2 } from "lucide-react";
+import { Settings2, Trophy } from "lucide-react";
 import { useT, useUiLanguage } from "@/lib/i18n";
 import { liveCount, getLeagueLabel, type LeagueDef, type SportsGame } from "@/lib/sports/espn";
 import { SportsCard } from "./sports-card";
 import { SportsCustomizeModal } from "./sports-customize-modal";
+import { TennisTournamentsModal } from "../../tennis-tournaments-modal";
+
+const TENNIS_KEYS = ["TENNIS", "TENNIS_WTA"];
 
 export function SportsMarquee({
   games,
@@ -28,6 +31,10 @@ export function SportsMarquee({
   const pausedRef = useRef(false);
   const live = liveCount(games);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [showTournaments, setShowTournaments] = useState(false);
+  const showTennis =
+    TENNIS_KEYS.includes(selected) ||
+    (selected === "all" && selectedLeagues.some((k) => TENNIS_KEYS.includes(k)));
 
   useEffect(() => {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -55,14 +62,26 @@ export function SportsMarquee({
               </span>
             )}
           </div>
-          <button
-            onClick={() => setShowCustomize(true)}
-            title={t("sports.customize")}
-            className="flex items-center gap-1.5 rounded-full border border-edge-soft/50 bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted transition-all hover:border-edge hover:bg-elevated hover:text-ink"
-          >
-            <Settings2 size={13} />
-            <span>{t("sports.customize")}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {showTennis && (
+              <button
+                onClick={() => setShowTournaments(true)}
+                title={t("Tournaments")}
+                className="flex items-center gap-1.5 rounded-full border border-edge-soft/50 bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted transition-all hover:border-edge hover:text-ink"
+              >
+                <Trophy size={13} />
+                <span>{t("Tournaments")}</span>
+              </button>
+            )}
+            <button
+              onClick={() => setShowCustomize(true)}
+              title={t("sports.customize")}
+              className="flex items-center gap-1.5 rounded-full border border-edge-soft/50 bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-ink-muted transition-all hover:border-edge hover:bg-elevated hover:text-ink"
+            >
+              <Settings2 size={13} />
+              <span>{t("sports.customize")}</span>
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <LeagueChip active={selected === "all"} onClick={() => onLeague("all")} label={t("All")} />
@@ -93,6 +112,7 @@ export function SportsMarquee({
           </div>
         )}
       </div>
+      {showTournaments && <TennisTournamentsModal onClose={() => setShowTournaments(false)} />}
       {showCustomize && (
         <SportsCustomizeModal
           selected={selectedLeagues}

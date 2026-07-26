@@ -1,6 +1,7 @@
-import { Star } from "lucide-react";
+import { ArrowDownToLine, ChevronRight, Star } from "lucide-react";
+import { useRatingPoster } from "@/lib/ratings/poster";
 import { useT } from "@/lib/i18n";
-import { SectionHeader } from "./section-header";
+import { ArrowedScrollRow } from "@/components/arrowed-scroll-row";
 import { RatingPoster } from "@/components/ratings/rating-poster";
 import type { RatingsSummary } from "@/lib/ratings/types";
 
@@ -8,11 +9,13 @@ export function RatingsCard({
   ratings,
   isOwner,
   onViewAll,
+  onImport,
   onOpenMeta,
 }: {
   ratings?: RatingsSummary;
   isOwner: boolean;
   onViewAll: () => void;
+  onImport?: () => void;
   onOpenMeta?: (metaId: string, kind?: string, hint?: { name?: string; poster?: string }) => void;
 }) {
   const t = useT();
@@ -21,11 +24,38 @@ export function RatingsCard({
 
   return (
     <section aria-label={t("Ratings")} className="rounded-[14px] bg-surface p-5 ring-1 ring-edge-soft">
-      <SectionHeader
-        icon={<Star size={20} />}
-        label={t("Ratings")}
-        onViewAll={count > 0 ? onViewAll : undefined}
-      />
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-subtle">
+          <Star size={20} /> {t("Ratings")}
+        </div>
+        <div className="flex shrink-0 items-center gap-4">
+          {isOwner && onImport && (
+            <button
+              type="button"
+              onClick={onImport}
+              aria-label={t("Import your ratings")}
+              className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+            >
+              <ArrowDownToLine size={14} strokeWidth={2.2} />
+              {t("Import")}
+            </button>
+          )}
+          {count > 0 && (
+            <button
+              type="button"
+              onClick={onViewAll}
+              className="group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+            >
+              {t("View all")}
+              <ChevronRight
+                size={14}
+                strokeWidth={2.2}
+                className="dir-icon transition-transform duration-200 group-hover/va:translate-x-0.5"
+              />
+            </button>
+          )}
+        </div>
+      </div>
       {count === 0 ? (
         <p className="py-6 text-center text-[13px] text-ink-subtle">
           {t("Rate movies, shows, anime, and manga to build your ratings")}
@@ -43,24 +73,33 @@ export function RatingsCard({
               {count === 1 ? t("rating") : t("ratings")}
             </span>
           </div>
-          <div className="-mx-5 flex gap-4 overflow-x-auto px-5 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ArrowedScrollRow className="-mx-5 px-4">
             {ratings.recent.map((r) => (
-              <div key={r.itemKey} className="w-[104px] shrink-0">
-                <RatingPoster
-                  title={r.title}
-                  posterUrl={r.posterUrl}
-                  score={r.score}
-                  onOpen={
-                    onOpenMeta
-                      ? () => onOpenMeta(r.itemKey, r.mediaType, { name: r.title, poster: r.posterUrl })
-                      : undefined
-                  }
-                />
-              </div>
+              <RatingTile key={r.itemKey} r={r} onOpenMeta={onOpenMeta} />
             ))}
-          </div>
+          </ArrowedScrollRow>
         </>
       )}
     </section>
+  );
+}
+
+function RatingTile({
+  r,
+  onOpenMeta,
+}: {
+  r: RatingsSummary["recent"][number];
+  onOpenMeta?: (metaId: string, kind?: string, hint?: { name?: string; poster?: string }) => void;
+}) {
+  const poster = useRatingPoster(r.itemKey, r.mediaType, r.title, r.posterUrl);
+  return (
+    <div className="w-[104px] shrink-0">
+      <RatingPoster
+        title={r.title}
+        posterUrl={poster}
+        score={r.score}
+        onOpen={onOpenMeta ? () => onOpenMeta(r.itemKey, r.mediaType, { name: r.title, poster }) : undefined}
+      />
+    </div>
   );
 }

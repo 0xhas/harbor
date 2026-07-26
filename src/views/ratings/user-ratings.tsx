@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRatingPoster } from "@/lib/ratings/poster";
 import { createPortal } from "react-dom";
 import { Eye, Loader2, X } from "lucide-react";
 import { Poster } from "@/components/poster";
@@ -172,6 +173,7 @@ function RatingRow({
     ? () => onOpenMeta(r.itemKey, r.mediaType, { name: r.title, poster: r.posterUrl })
     : undefined;
 
+  const poster = useRatingPoster(r.itemKey, r.mediaType, r.title, r.posterUrl);
   return (
     <div className="flex gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-3.5">
       <button
@@ -180,7 +182,7 @@ function RatingRow({
         disabled={!open}
         className="w-16 shrink-0 disabled:cursor-default"
       >
-        <Poster src={r.posterUrl} seed={r.title} ratio="portrait" lazy className="rounded-[8px] ring-1 ring-edge-soft" />
+        <Poster src={poster} seed={r.title} ratio="portrait" lazy className="rounded-[8px] ring-1 ring-edge-soft" />
       </button>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">

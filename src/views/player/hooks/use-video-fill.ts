@@ -27,6 +27,11 @@ const MODES: CropMode[] = [
   { id: "original", label: "2.39:1", panscan: 0, aspect: "2.39:1", zoom: 0 },
 ];
 
+export function cropTransform(modeId: string, zoomLevel = 0): { panscan: number; zoom: number; stretch: boolean } {
+  const m = MODES[modeIndex(modeId)];
+  return { panscan: m.panscan, zoom: m.id === "zoom" ? zoomLevel : 0, stretch: m.stretch === true };
+}
+
 export const CROP_PRESETS: ReadonlyArray<{ id: string; label: string }> = MODES.filter(
   (m) => m.id !== "zoom",
 ).map((m) => ({ id: m.id, label: m.label }));
@@ -115,5 +120,5 @@ export function useVideoFill(bridgeRef: RefObject<PlayerBridge | null>, srcKey: 
     update({ cropMode: MODES[i].id });
   };
 
-  return { cycle, step, setMode, mode: settings.cropMode, pill };
+  return { cycle, step, setMode, mode: settings.cropMode, zoom: zoom.current, pill };
 }

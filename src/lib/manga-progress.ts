@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useProfiles } from "./profiles";
+import { queueSuwayomiProgress } from "./manga/sources/suwayomi/progress-bridge";
 
 export type MangaProgressEntry = {
   id: string;
@@ -59,6 +60,12 @@ export function recordMangaProgress(pid: string, entry: MangaProgressEntry): voi
   const prev = listMangaProgress(pid).filter((e) => e.id !== entry.id);
   write(pid, [entry, ...prev]);
   notify();
+  queueSuwayomiProgress({
+    sourceId: entry.sourceId,
+    chapterId: entry.chapterId,
+    page: Math.max(0, entry.page - 1),
+    totalPages: entry.totalPages,
+  });
 }
 
 export function removeMangaProgressEntry(pid: string, id: string): void {

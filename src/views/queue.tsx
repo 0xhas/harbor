@@ -250,7 +250,7 @@ function NavArrow({
       aria-label={side === "left" ? t("Previous") : t("Next")}
       className={`absolute top-1/2 ${
         side === "left" ? "-start-5" : "-end-5"
-      } z-20 grid h-20 w-20 -translate-y-1/2 place-items-center text-white/85 drop-shadow-[0_2px_9px_rgba(0,0,0,0.8)] transition-all duration-200 ease-out hover:scale-110 hover:text-white active:scale-95 disabled:pointer-events-none disabled:opacity-20`}
+      } z-20 grid h-20 w-20 -translate-y-1/2 place-items-center text-white/85 drop-shadow-[0_2px_9px_rgba(0,0,0,0.8)] transition-[transform,color,opacity] duration-200 ease-out hover:scale-110 hover:text-white active:scale-95 disabled:pointer-events-none disabled:opacity-20 motion-reduce:transition-none motion-reduce:hover:scale-100`}
     >
       <NavChevron dir={side} size={60} />
     </button>

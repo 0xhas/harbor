@@ -11,13 +11,15 @@ import { RatingStars } from "./rating-stars";
 
 const REVIEW_MAX = 4000;
 
-function errorText(e: unknown, t: (s: string) => string): string {
+function errorText(e: unknown, t: (s: string) => string, action: "save" | "remove"): string {
   const status = (e as { status?: number })?.status;
   const msg = (e as { message?: string })?.message;
   if (status === 401) return t("Sign in to rate");
   if (msg === "blocked_text") return t("Your review contains language that is not allowed");
   if (status === 429) return t("You are rating too fast, try again in a moment");
-  return t("Could not save your rating");
+  if (status === undefined) return t("Couldn't reach Harbor, check your connection");
+  if (status >= 500) return t("Harbor is having trouble, try again in a moment");
+  return action === "remove" ? t("Could not remove your rating") : t("Could not save your rating");
 }
 
 export function RatingModal({ target, onClose }: { target: RatingTarget; onClose: () => void }) {
@@ -62,7 +64,7 @@ export function RatingModal({ target, onClose }: { target: RatingTarget; onClose
       emitListToast(t("Rating saved"));
       onClose();
     } catch (e) {
-      emitListToast(errorText(e, t));
+      emitListToast(errorText(e, t, "save"));
     } finally {
       setBusy(false);
     }
@@ -76,7 +78,7 @@ export function RatingModal({ target, onClose }: { target: RatingTarget; onClose
       emitListToast(t("Rating removed"));
       onClose();
     } catch (e) {
-      emitListToast(errorText(e, t));
+      emitListToast(errorText(e, t, "remove"));
     } finally {
       setBusy(false);
     }

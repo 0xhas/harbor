@@ -53,7 +53,7 @@ export function NotificationCenter({ trigger = true }: { trigger?: boolean } = {
       if (requestId) openDiagnosticsConsent(requestId);
       return;
     }
-    if (notif.kind === "group-added" && notif.targetId) {
+    if ((notif.kind === "group-added" || notif.kind === "group-post") && notif.targetId) {
       setOpen(false);
       requestOpenGroup(notif.targetId);
       return;

@@ -49,6 +49,7 @@ const manga: Record<string, string> = {
   "Choose manga folder": "Escolha a pasta de mangás",
   "Close reader": "Fechar leitor",
   "Continue reading": "Continuar lendo",
+  "Read now": "Ler agora",
   "Copy example": "Copiar exemplo",
   "Could not add that folder": "Não foi possível adicionar essa pasta",
   "Could not add that source.": "Não foi possível adicionar essa fonte.",

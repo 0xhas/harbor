@@ -1,4 +1,5 @@
 import { Bookmark, BookOpen, Trash2 } from "lucide-react";
+import { CoverImg } from "@/components/cover-img";
 import { useEffect, useRef, useState } from "react";
 import {
   removeMangaBookmark,
@@ -113,7 +114,7 @@ function BookmarkRow({
       >
         <span className="flex h-12 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-canvas text-ink-subtle">
           {bm.cover ? (
-            <img src={bm.cover} alt="" className="h-full w-full object-cover" />
+            <CoverImg src={bm.cover} alt="" className="h-full w-full object-cover" />
           ) : (
             <BookOpen size={15} strokeWidth={1.8} />
           )}

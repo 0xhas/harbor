@@ -1,6 +1,7 @@
 import tvdbLogo from "@/assets/addon-logos/tvdb.svg";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
 import { useSettings } from "@/lib/settings";
+import { effectiveOrderProvider } from "@/lib/settings/episode-order";
 import { useT } from "@/lib/i18n";
 import { ToggleRow } from "./shared";
 
@@ -126,7 +127,7 @@ function Seg<T extends string>({
 export function EpisodeOrderSetting() {
   const { settings, update } = useSettings();
   const t = useT();
-  const provider: Provider = settings.episodeOrderProvider === "tvdb" ? "tvdb" : "tmdb";
+  const provider: Provider = effectiveOrderProvider(settings);
 
   const pickProvider = (p: Provider) => {
     if (p === "tvdb") update({ episodeOrderProvider: "tvdb", tvdbOrderPanel: true });

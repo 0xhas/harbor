@@ -19,7 +19,7 @@ const SPAM_HOSTS = new Set([
 const SIZE_EM = ["0.85", "0.85", "1", "1.15", "1.4", "1.7", "2.1", "2.6"];
 
 const TAG_RE =
-  /\[(\/?)(b|i|u|s|h|quote|code|list|color|size|url|img|youtube|spotify|video)(?:=([^\]\n]*))?\]|(\[\*\])/gi;
+  /\[(\/?)(b|i|u|s|h|quote|code|list|color|size|url|img|youtube|spotify|video|media)(?:=([^\]\n]*))?\]|(\[\*\])/gi;
 
 type Tok =
   | { k: "text"; v: string }
@@ -75,7 +75,7 @@ function colorValue(arg: string): string | null {
   return null;
 }
 
-function ytId(raw: string): string | null {
+export function ytId(raw: string): string | null {
   const t = raw.trim();
   const ok = (id: string) => (/^[A-Za-z0-9_-]{11}$/.test(id) ? id : null);
   if (/^[A-Za-z0-9_-]{11}$/.test(t)) return t;
@@ -95,7 +95,7 @@ function ytId(raw: string): string | null {
   return null;
 }
 
-function spotifyEmbed(raw: string): { type: string; id: string } | null {
+export function spotifyEmbed(raw: string): { type: string; id: string } | null {
   const t = raw.trim();
   const types = new Set(["track", "album", "playlist", "artist", "episode", "show"]);
   const uri = t.match(/^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]+)$/i);
@@ -134,12 +134,24 @@ function tokenize(src: string): Tok[] {
   return toks;
 }
 
+function ytEmbedSrc(id: string): string {
+  const params = new URLSearchParams({
+    rel: "0",
+    modestbranding: "1",
+    playsinline: "1",
+    iv_load_policy: "3",
+  });
+  const proto = typeof window !== "undefined" ? (window.location?.protocol ?? "") : "";
+  if (/^https?:$/.test(proto) && window.location?.origin) params.set("origin", window.location.origin);
+  return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
+}
+
 function iframe(src: string, title: string): string {
   return (
     `<div style="position:relative;width:100%;aspect-ratio:16/9;margin:10px 0;border-radius:12px;overflow:hidden;background:#000">` +
     `<iframe src="${esc(src)}" title="${esc(title)}" loading="lazy" allowfullscreen ` +
     `allow="encrypted-media;picture-in-picture;clipboard-write;fullscreen" ` +
-    `sandbox="allow-scripts allow-same-origin allow-presentation" ` +
+    `referrerpolicy="strict-origin-when-cross-origin" ` +
     `style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>`
   );
 }
@@ -154,7 +166,44 @@ function spotifyIframe(src: string): string {
   );
 }
 
+const MEDIA_CARD_STYLE =
+  "display:flex;align-items:center;gap:10px;margin:8px 0;padding:8px;border-radius:12px;" +
+  "background:var(--color-elevated);box-shadow:inset 0 0 0 1px var(--color-edge-soft);" +
+  "max-width:340px;cursor:pointer;text-decoration:none";
+
+const MEDIA_KIND: Record<string, string> = {
+  movie: "Movie",
+  series: "Series",
+  anime: "Anime",
+  manga: "Manga",
+};
+
+export function mediaTag(id: string, kind: string, title: string, poster?: string): string {
+  const clean = (s: string) => s.replace(/[|[\]]/g, "").trim();
+  return `[media]${clean(id)}|${clean(kind)}|${clean(title).slice(0, 120)}|${clean(poster ?? "")}[/media]`;
+}
+
+function mediaHtml(raw: string): string | null {
+  const [id, kind, title, poster] = raw.split("|").map((s) => s.trim());
+  if (!id || !title) return null;
+  const label = MEDIA_KIND[kind] ?? "Title";
+  const art = poster && /^https:\/\/[^\s<>"']+$/i.test(poster) ? poster : null;
+  const thumb = art
+    ? `<img src="${esc(art)}" alt="" loading="lazy" referrerpolicy="no-referrer" ` +
+      `style="width:44px;height:66px;border-radius:8px;object-fit:cover;flex:0 0 auto;display:block" />`
+    : `<span style="width:44px;height:66px;border-radius:8px;flex:0 0 auto;display:block;background:var(--color-raised)"></span>`;
+  return (
+    `<span data-harbor-media="${esc(id)}" data-harbor-media-kind="${esc(kind || "movie")}" data-harbor-media-title="${esc(title)}" data-harbor-media-poster="${esc(art ?? "")}" role="button" tabindex="0" style="${MEDIA_CARD_STYLE}">` +
+    thumb +
+    `<span style="min-width:0;display:flex;flex-direction:column;gap:2px">` +
+    `<span style="font-size:0.82em;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-ink-subtle)">${esc(label)}</span>` +
+    `<span style="font-weight:600;color:var(--color-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title)}</span>` +
+    `</span></span>`
+  );
+}
+
 function embedHtml(tag: string, raw: string): string | null {
+  if (tag === "media") return mediaHtml(raw);
   if (tag === "img") {
     const src = httpsUrl(raw);
     return src
@@ -171,7 +220,7 @@ function embedHtml(tag: string, raw: string): string | null {
   }
   if (tag === "youtube") {
     const id = ytId(raw);
-    return id ? iframe(`https://www.youtube-nocookie.com/embed/${id}`, "YouTube video") : null;
+    return id ? iframe(ytEmbedSrc(id), "YouTube video") : null;
   }
   if (tag === "spotify") {
     const s = spotifyEmbed(raw);
@@ -267,7 +316,8 @@ function finalize(f: Frame, addEmbed: () => boolean): { html: string; raw: strin
     case "img":
     case "video":
     case "youtube":
-    case "spotify": {
+    case "spotify":
+    case "media": {
       if (!addEmbed()) return wrap(esc(raw.trim()));
       const html = embedHtml(f.tag, raw);
       return wrap(html ?? esc(raw.trim()));

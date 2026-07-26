@@ -24,6 +24,7 @@ pub async fn recognize_now_playing(
             tauri::async_runtime::spawn_blocking(move || capture_loopback(secs))
                 .await
                 .map_err(|e| e.to_string())??;
+        ensure_audible(&pcm)?;
         let wav = pcm_to_wav(&pcm, sample_rate, channels, bits)?;
         audd_recognize(wav, api_token).await
     }
@@ -42,16 +43,14 @@ pub async fn recognize_now_playing_ai(
 ) -> Result<Option<SongResult>, String> {
     #[cfg(windows)]
     {
-        let secs = seconds.unwrap_or(7).clamp(3, 15);
+        let secs = seconds.unwrap_or(8).clamp(3, 15);
         let (pcm, sample_rate, channels, bits) =
             tauri::async_runtime::spawn_blocking(move || capture_loopback(secs))
                 .await
                 .map_err(|e| e.to_string())??;
+        ensure_audible(&pcm)?;
         let wav = pcm_to_wav(&pcm, sample_rate, channels, bits)?;
-        let model = model
-            .filter(|m| !m.trim().is_empty())
-            .unwrap_or_else(|| "gemini-2.0-flash".to_string());
-        gemini_recognize(wav, api_key, model).await
+        crate::song_id_gemini::recognize(wav, api_key, model).await
     }
     #[cfg(not(windows))]
     {
@@ -104,8 +103,30 @@ fn capture_loopback(seconds: u32) -> Result<(Vec<u8>, u32, u16, u16), String> {
     }
     audio_client.stop_stream().map_err(|e| e.to_string())?;
 
+    let bytes_per_sec = sample_rate as usize * blockalign;
+    let got = queue.len();
+    if got < target_bytes.min(bytes_per_sec * 4) {
+        let secs = got as f32 / bytes_per_sec as f32;
+        return Err(format!(
+            "Harbor only captured {secs:.1}s before your playback device went quiet. Keep the scene playing while Harbor listens."
+        ));
+    }
+
     let pcm: Vec<u8> = queue.into_iter().take(target_bytes).collect();
     Ok((pcm, sample_rate, channels, bits))
+}
+
+#[cfg(windows)]
+fn ensure_audible(pcm: &[u8]) -> Result<(), String> {
+    let peak = pcm
+        .chunks_exact(2)
+        .map(|c| (i16::from_le_bytes([c[0], c[1]]) as i32).abs())
+        .max()
+        .unwrap_or(0);
+    if peak < 150 {
+        return Err("Harbor heard silence on your default playback device. Play the scene with sound, and make sure Windows is playing it through the device set as default.".to_string());
+    }
+    Ok(())
 }
 
 #[cfg(windows)]
@@ -144,7 +165,11 @@ async fn audd_recognize(wav: Vec<u8>, api_token: String) -> Result<Option<SongRe
         .text("return", "apple_music,spotify")
         .part("file", part);
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(45))
+        .build()
+        .map_err(|e| e.to_string())?;
     let resp = client
         .post("https://api.audd.io/")
         .multipart(form)
@@ -178,83 +203,4 @@ async fn audd_recognize(wav: Vec<u8>, api_token: String) -> Result<Option<SongRe
     }
 
     Ok(Some(SongResult { title, artist, album, artwork, link }))
-}
-
-#[cfg(windows)]
-async fn gemini_recognize(
-    wav: Vec<u8>,
-    api_key: String,
-    model: String,
-) -> Result<Option<SongResult>, String> {
-    use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
-
-    let audio_b64 = B64.encode(&wav);
-    let prompt = "You are a music identification engine. Identify the song playing in this audio clip. \
-Respond with ONLY a JSON object of the form {\"artist\":\"...\",\"title\":\"...\",\"album\":\"...\"}. \
-Use empty strings for fields you are unsure of. If you cannot identify any song, respond {\"artist\":\"\",\"title\":\"\"}.";
-
-    let body = serde_json::json!({
-        "contents": [{
-            "parts": [
-                { "text": prompt },
-                { "inlineData": { "mimeType": "audio/wav", "data": audio_b64 } }
-            ]
-        }],
-        "generationConfig": { "temperature": 0.0 }
-    });
-
-    let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
-        model, api_key
-    );
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(&url)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-    let status = resp.status();
-    let json: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
-
-    if !status.is_success() {
-        let msg = json["error"]["message"].as_str().unwrap_or("request failed");
-        return Err(format!("Gemini: {msg}"));
-    }
-
-    let text = json["candidates"][0]["content"]["parts"][0]["text"]
-        .as_str()
-        .unwrap_or("")
-        .trim()
-        .to_string();
-    if text.is_empty() {
-        return Ok(None);
-    }
-
-    let mut cleaned = text.trim();
-    if let Some(rest) = cleaned.strip_prefix("```json") {
-        cleaned = rest.trim();
-    } else if let Some(rest) = cleaned.strip_prefix("```") {
-        cleaned = rest.trim();
-    }
-    if let Some(rest) = cleaned.strip_suffix("```") {
-        cleaned = rest.trim();
-    }
-
-    let parsed: serde_json::Value =
-        serde_json::from_str(cleaned).map_err(|e| format!("Gemini parse: {e}"))?;
-    let title = parsed["title"].as_str().unwrap_or("").trim().to_string();
-    let artist = parsed["artist"].as_str().unwrap_or("").trim().to_string();
-    let album = parsed["album"].as_str().unwrap_or("").trim().to_string();
-    if title.is_empty() && artist.is_empty() {
-        return Ok(None);
-    }
-
-    Ok(Some(SongResult {
-        title,
-        artist,
-        album,
-        artwork: String::new(),
-        link: String::new(),
-    }))
 }

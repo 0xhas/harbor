@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { observe, usePageVisible } from "@/lib/visibility";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { isRtl, useT, useUiLanguage } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { Hero } from "./hero";
@@ -16,17 +17,22 @@ const DRAG_BUDGE = 6;
 const SNAP_RATIO = 0.18;
 const FLICK_VELOCITY = 0.45;
 const SLIDE_GAP_PX = 22;
+const ROTATE_MS = 13000;
+const BILLBOARD_ROTATE_MS = 22000;
+const BILLBOARD_ENTER_SCALE = 1.045;
 
 export function HeroCarousel({
   slides,
   full = false,
   fullQuality = false,
   playTrailers = false,
+  billboard = false,
 }: {
   slides: Slide[];
   full?: boolean;
   fullQuality?: boolean;
   playTrailers?: boolean;
+  billboard?: boolean;
 }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -37,6 +43,7 @@ export function HeroCarousel({
   const { settings } = useSettings();
   const t = useT();
   const rtl = isRtl(useUiLanguage());
+  const reduce = useReducedMotion();
 
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -66,9 +73,20 @@ export function HeroCarousel({
   useEffect(() => {
     if (paused || dragging || !inViewport || !pageVisible || slides.length < 2) return;
     if (settings.heroTrailerAudio) return;
-    const id = setInterval(() => setActive((a) => (a + 1) % slides.length), 13000);
+    const id = setInterval(
+      () => setActive((a) => (a + 1) % slides.length),
+      billboard ? BILLBOARD_ROTATE_MS : ROTATE_MS,
+    );
     return () => clearInterval(id);
-  }, [paused, dragging, inViewport, pageVisible, slides.length, settings.heroTrailerAudio]);
+  }, [
+    paused,
+    dragging,
+    inViewport,
+    pageVisible,
+    slides.length,
+    settings.heroTrailerAudio,
+    billboard,
+  ]);
 
   useEffect(() => {
     if (active >= slides.length) setActive(0);
@@ -76,7 +94,7 @@ export function HeroCarousel({
 
   if (slides.length === 0) {
     return (
-      <div className={`animate-pulse border border-edge-soft bg-elevated/30 ${full ? "min-h-[max(78vh,640px)] rounded-none" : "min-h-[560px] rounded-[28px]"}`} />
+      <div className={`harbor-hero-stage animate-pulse border border-edge-soft bg-elevated/30 ${full ? "min-h-[max(78vh,640px)] rounded-none" : "min-h-[560px] rounded-[28px]"}`} />
     );
   }
 
@@ -152,6 +170,34 @@ export function HeroCarousel({
 
   const trackTransform = `translate3d(calc(${-active * 100}% + ${offset - active * SLIDE_GAP_PX}px), 0, 0)`;
 
+  const slideStyle = (isActive: boolean, distance: number): React.CSSProperties => {
+    if (!billboard) {
+      return {
+        opacity: dragging ? 1 : isActive ? 1 : 0.42,
+        transition: dragging ? "none" : `opacity 700ms ${EASE_OUT}`,
+        pointerEvents: isActive ? "auto" : "none",
+        zIndex: 10 - distance,
+      };
+    }
+    if (reduce) {
+      return {
+        opacity: isActive ? 1 : 0,
+        transition: "opacity 200ms linear",
+        pointerEvents: isActive ? "auto" : "none",
+        zIndex: isActive ? 10 : 9,
+      };
+    }
+    return {
+      opacity: isActive ? 1 : 0,
+      transform: isActive ? "scale(1)" : `scale(${BILLBOARD_ENTER_SCALE})`,
+      transformOrigin: "center 42%",
+      transition:
+        "opacity var(--tv-dur-billboard, 640ms) linear, transform var(--tv-dur-billboard-settle, 900ms) var(--tv-ease-settle, cubic-bezier(0.3,0.45,0.2,1))",
+      pointerEvents: isActive ? "auto" : "none",
+      zIndex: isActive ? 10 : 9,
+    };
+  };
+
   return (
     <div
       className={full ? "relative" : "flex flex-col gap-5"}
@@ -161,25 +207,29 @@ export function HeroCarousel({
       <div
         ref={viewportRef}
         dir="ltr"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onClickCapture={onClickCapture}
+        onPointerDown={billboard ? undefined : onPointerDown}
+        onPointerMove={billboard ? undefined : onPointerMove}
+        onPointerUp={billboard ? undefined : endDrag}
+        onPointerCancel={billboard ? undefined : endDrag}
+        onClickCapture={billboard ? undefined : onClickCapture}
         className={`group relative overflow-hidden ${full ? "rounded-none" : "rounded-[28px]"} ${
-          dragging ? "cursor-grabbing" : "cursor-grab"
+          billboard ? "" : dragging ? "cursor-grabbing" : "cursor-grab"
         } select-none`}
         style={{ touchAction: "pan-y" }}
       >
         <div
-          className="flex"
+          className={billboard ? "grid" : "flex"}
           dir="ltr"
-          style={{
-            gap: `${SLIDE_GAP_PX}px`,
-            transform: trackTransform,
-            transition: dragging ? "none" : `transform 720ms ${EASE_OUT}`,
-            willChange: dragging ? "transform" : "auto",
-          }}
+          style={
+            billboard
+              ? undefined
+              : {
+                  gap: `${SLIDE_GAP_PX}px`,
+                  transform: trackTransform,
+                  transition: dragging ? "none" : `transform 720ms ${EASE_OUT}`,
+                  willChange: dragging ? "transform" : "auto",
+                }
+          }
         >
           {slides.map((s, i) => {
             const isActive = i === active;
@@ -190,13 +240,8 @@ export function HeroCarousel({
                 key={`${s.meta.id}-${i}`}
                 dir={rtl ? "rtl" : "ltr"}
                 aria-hidden={!isActive}
-                className="w-full shrink-0"
-                style={{
-                  opacity: dragging ? 1 : isActive ? 1 : 0.42,
-                  transition: dragging ? "none" : `opacity 700ms ${EASE_OUT}`,
-                  pointerEvents: isActive ? "auto" : "none",
-                  zIndex: 10 - distance,
-                }}
+                className={`w-full shrink-0 ${billboard ? "[grid-area:1/1]" : ""}`}
+                style={slideStyle(isActive, distance)}
               >
                 {shouldMount ? (
                   <Hero
@@ -209,7 +254,7 @@ export function HeroCarousel({
                     playTrailer={playTrailers && isActive && !dragging}
                   />
                 ) : (
-                  <div className={`w-full bg-elevated/30 ${full ? "h-[78vh] min-h-[640px] rounded-none" : "h-[560px] rounded-[28px]"}`} />
+                  <div className={`harbor-hero-stage w-full bg-elevated/30 ${full ? "h-[78vh] min-h-[640px] rounded-none" : "h-[560px] rounded-[28px]"}`} />
                 )}
               </div>
             );

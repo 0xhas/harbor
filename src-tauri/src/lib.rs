@@ -431,7 +431,7 @@ pub fn run() {
             }
         }
     }
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "linux"))]
     svp::prime_svp_env();
     #[cfg(target_os = "linux")]
     mpv_render_linux::configure_nvidia_graphics();

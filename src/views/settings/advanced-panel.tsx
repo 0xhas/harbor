@@ -1,8 +1,8 @@
 import { Check, Download, FlaskConical, Link2, Loader2, Lock, RotateCw, Wrench } from "lucide-react";
+import { GitHubIcon } from "@/components/github-icon";
 import { useEffect, useState, type ReactNode } from "react";
 import cornerSvg from "@/assets/corner.svg";
 import harborDiscord from "@/assets/harbor-discord.svg";
-import { GitHubIcon } from "@/components/github-icon";
 import { useAuth } from "@/lib/auth";
 import { useOnboarding } from "@/lib/onboarding";
 import {
@@ -225,7 +225,7 @@ function WebBuildBanner() {
             onClick={() => openUrl(SOURCE_URL)}
             className="flex h-10 w-fit items-center gap-2 rounded-xl border border-edge bg-elevated/60 px-4 text-[13.5px] font-semibold text-ink transition-colors hover:border-ink hover:bg-elevated"
           >
-            <GitHubIcon size={14} />
+            <GitHubIcon size={14} strokeWidth={2.2} />
             {t("Source code")}
           </button>
         </div>

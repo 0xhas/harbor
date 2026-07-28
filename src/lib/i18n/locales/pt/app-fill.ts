@@ -664,6 +664,7 @@ const appFill: Record<string, string> = {
   "Added {count} more subtitles.": "{count} legendas adicionadas.",
   "No new subtitles found beyond what is already listed.": "Nenhuma legenda nova além das já listadas.",
   "{time} left": "faltam {time}",
+  "Loading your library…": "Carregando sua biblioteca…",
 };
 
 export default appFill;

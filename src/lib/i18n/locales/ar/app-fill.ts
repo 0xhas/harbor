@@ -1107,6 +1107,7 @@ const appFill: Record<string, string> = {
   "Added {count} more subtitles.": "تمت إضافة {count} ترجمة إضافية.",
   "No new subtitles found beyond what is already listed.": "لا توجد ترجمات جديدة غير المدرجة بالفعل.",
   "{time} left": "متبقٍ {time}",
+  "Loading your library…": "جارٍ تحميل مكتبتك…",
 };
 
 export default appFill;

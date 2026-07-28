@@ -216,6 +216,8 @@ export type Settings = {
   seekPreviewEnabled: boolean;
   instantPlay: boolean;
   autoNextStreamOnStall: boolean;
+  autoNextStreamOnStallSec: number;
+  fullscreenMode: "fullscreen" | "maximized";
   seasonSourceLock: boolean;
   rememberLastStream: boolean;
   keepSourceNextEpisode: boolean;
@@ -236,6 +238,7 @@ export type Settings = {
   torrentsDisabled: boolean;
   torrentFullDownload: boolean;
   keepStreamDownloadsInBackground: boolean;
+  deferTorrentEngine: boolean;
   p2pAutoConsent: boolean;
   streamMode: "both" | "addons" | "p2p";
   queueDrivesNav: boolean;
@@ -272,6 +275,9 @@ export type Settings = {
   subLineSpacing: number;
   subProvidersEnabled: { wyzie: boolean; opensubtitles: boolean; jimaku: boolean; addons: boolean; subdl?: boolean; subsource?: boolean };
   subShowInPip: boolean;
+  secondarySubLang: string;
+  subSecondaryPlacement: "top" | "bottom";
+  subSecondaryScale: number;
   subtitleAutoSync: boolean;
   autoSyncApplyStructural: boolean;
   autoSyncDrift: boolean;

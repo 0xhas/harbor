@@ -1108,6 +1108,8 @@ const appFill: Record<string, string> = {
   "No new subtitles found beyond what is already listed.": "لا توجد ترجمات جديدة غير المدرجة بالفعل.",
   "{time} left": "متبقٍ {time}",
   "Loading your library…": "جارٍ تحميل مكتبتك…",
+  "Keep controlling Harbor in the background": "مواصلة التحكم في هاربر في الخلفية",
+  "Off by default, so your controller only drives Harbor while it is the focused window. Leave it off if you play games with the same controller.": "معطّل افتراضيًا، ليتحكم ذراع التحكم في هاربر فقط عندما تكون نافذته نشطة. اتركه معطّلًا إذا كنت تلعب بنفس ذراع التحكم.",
 };
 
 export default appFill;

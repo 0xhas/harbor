@@ -665,6 +665,8 @@ const appFill: Record<string, string> = {
   "No new subtitles found beyond what is already listed.": "Nenhuma legenda nova além das já listadas.",
   "{time} left": "faltam {time}",
   "Loading your library…": "Carregando sua biblioteca…",
+  "Keep controlling Harbor in the background": "Continuar controlando o Harbor em segundo plano",
+  "Off by default, so your controller only drives Harbor while it is the focused window. Leave it off if you play games with the same controller.": "Desativado por padrão, para que o controle só comande o Harbor enquanto ele for a janela em foco. Deixe desativado se você joga com o mesmo controle.",
 };
 
 export default appFill;

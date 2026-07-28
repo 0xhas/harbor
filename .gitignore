@@ -42,6 +42,9 @@ pnpm-debug.log*
 local_docs/
 .diag/
 
+# This repo is pnpm (see packageManager + CI). npm lockfiles must not be committed.
+package-lock.json
+
 # Stripped IP assets (legal) - do not re-commit
 public/avatars/
 public/kids/avatars/

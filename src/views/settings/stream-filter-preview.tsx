@@ -44,7 +44,9 @@ function Badge({ label }: { label: string }) {
             ? "bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-500/30"
             : "bg-elevated text-ink-muted ring-edge-soft";
   return (
-    <span className={`flex h-5 shrink-0 items-center rounded-[5px] px-1.5 text-[9.5px] font-bold tracking-wide ring-1 ${tone}`}>
+    <span
+      className={`flex h-5 shrink-0 items-center rounded-[5px] px-1.5 text-[9.5px] font-bold tracking-wide ring-1 ${tone}`}
+    >
       {label}
     </span>
   );
@@ -78,7 +80,9 @@ export function StreamFilterPreview({ level }: { level: Level }) {
             <div
               key={s.name}
               className={`flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors ${off ? "bg-canvas/40" : ""}`}
-            >              <span
+            >
+              {" "}
+              <span
                 aria-hidden
                 className={`h-[18px] w-[18px] shrink-0 rounded-[4px] bg-elevated ring-1 ring-inset ring-white/10 ${off ? "opacity-50" : ""}`}
               />

@@ -78,13 +78,16 @@ function sanitizeCustomColors(c: unknown): CustomColors | null {
 
 export function sanitizeTheme(t: Partial<ThemeSettings> | undefined): ThemeSettings {
   if (!t) return DEFAULT_THEME;
-  const isBuiltIn = typeof t.preset === "string" && t.preset !== "custom" && isKnownPreset(t.preset);
+  const isBuiltIn =
+    typeof t.preset === "string" && t.preset !== "custom" && isKnownPreset(t.preset);
   const isUserPreset = typeof t.preset === "string" && t.preset.startsWith("user:");
   const isPreset = isBuiltIn || isUserPreset;
   const isCustom = t.preset === "custom";
   const fontOk = typeof t.fontPair === "string" && t.fontPair in FONT_PAIRS;
   const dimOk = typeof t.backgroundDim === "number" && t.backgroundDim >= 0 && t.backgroundDim <= 1;
-  const imgOk = t.backgroundImage == null || (typeof t.backgroundImage === "string" && t.backgroundImage.length < 3_000_000);
+  const imgOk =
+    t.backgroundImage == null ||
+    (typeof t.backgroundImage === "string" && t.backgroundImage.length < 3_000_000);
   const customColors = sanitizeCustomColors(t.customColors);
   const preset: ThemeSettings["preset"] = isPreset
     ? (t.preset as ThemeSettings["preset"])
@@ -132,11 +135,16 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       _animeRowsV1?: boolean;
       _tennisWtaV1?: boolean;
       _liquidGlassOptIn?: boolean;
+      _navThemeRepairV1?: boolean;
+      _playlistsTabV1?: boolean;
+      _smoothScrollOptIn?: boolean;
     };
     if (!parsed._animeRowsV1) {
       const prev = (parsed.animeRows ?? {}) as Partial<Settings["animeRows"]>;
       const hiddenSet = new Set<string>(Array.isArray(prev.hidden) ? prev.hidden : []);
-      const anilist = Array.isArray(parsed.animeAnilistRowsHidden) ? parsed.animeAnilistRowsHidden : [];
+      const anilist = Array.isArray(parsed.animeAnilistRowsHidden)
+        ? parsed.animeAnilistRowsHidden
+        : [];
       const mal = Array.isArray(parsed.animeMalRowsHidden) ? parsed.animeMalRowsHidden : [];
       if (anilist.includes("yourLists")) hiddenSet.add("yourAnilistLists");
       if (anilist.includes("trending")) hiddenSet.add("anilistTrending");
@@ -176,7 +184,10 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       }
       parsed._tennisWtaV1 = true;
     }
-    if (typeof parsed.songIdAiModel === "string" && RETIRED_GEMINI.has(parsed.songIdAiModel.trim())) {
+    if (
+      typeof parsed.songIdAiModel === "string" &&
+      RETIRED_GEMINI.has(parsed.songIdAiModel.trim())
+    ) {
       parsed.songIdAiModel = DEFAULT.songIdAiModel;
     }
     if (parsed.aiSearchModel) parsed.aiSearchModel = migrateModelId(parsed.aiSearchModel);
@@ -210,6 +221,24 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
       parsed.liquidGlass = false;
       parsed.experimentalLiquidGlassEnabled = false;
       parsed._liquidGlassOptIn = true;
+    }
+    if (!parsed._smoothScrollOptIn) {
+      parsed.smoothScroll = false;
+      parsed._smoothScrollOptIn = true;
+    }
+    if (!parsed._playlistsTabV1) {
+      const lists = parsed.iptvPlaylists;
+      const hasVodSource =
+        Array.isArray(lists) && lists.some((l) => l && (l as { kind?: string }).kind !== "epg");
+      if (hasVodSource) parsed.showPlaylistsTab = true;
+      parsed._playlistsTabV1 = true;
+    }
+    if (!parsed._navThemeRepairV1) {
+      const nav = parsed.navCustomization as Partial<Settings["navCustomization"]> | undefined;
+      if (nav && Array.isArray(nav.hidden) && nav.hidden.length > 0) {
+        parsed.navCustomization = { ...nav, hidden: [] } as Settings["navCustomization"];
+      }
+      parsed._navThemeRepairV1 = true;
     }
     return {
       ...DEFAULT,
@@ -310,8 +339,12 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
         },
       },
       webhookRules: Array.isArray(parsed.webhookRules) ? parsed.webhookRules : [],
-      customStreamFilters: Array.isArray(parsed.customStreamFilters) ? parsed.customStreamFilters : DEFAULT.customStreamFilters,
-      streamPriority: Array.isArray(parsed.streamPriority) ? parsed.streamPriority : DEFAULT.streamPriority,
+      customStreamFilters: Array.isArray(parsed.customStreamFilters)
+        ? parsed.customStreamFilters
+        : DEFAULT.customStreamFilters,
+      streamPriority: Array.isArray(parsed.streamPriority)
+        ? parsed.streamPriority
+        : DEFAULT.streamPriority,
       animeFavoriteGenres: Array.isArray(parsed.animeFavoriteGenres)
         ? parsed.animeFavoriteGenres.filter((g): g is number => typeof g === "number")
         : DEFAULT.animeFavoriteGenres,

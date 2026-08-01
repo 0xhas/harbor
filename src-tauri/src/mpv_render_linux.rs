@@ -206,7 +206,15 @@ fn native_display(backend: Backend) -> u64 {
     native as u64
 }
 
-pub fn configure_nvidia_graphics() {
+pub fn configure_linux_graphics() {
+    if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
+        eprintln!("[harbor::mpv_linux] setting WEBKIT_DISABLE_COMPOSITING_MODE=1 so WebKitGTK repaints overlays over the mpv surface instead of leaving ghost frames");
+        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+    }
+    if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
+        eprintln!("[harbor::mpv_linux] setting WEBKIT_DISABLE_DMABUF_RENDERER=1 so WebKitGTK overlays repaint over the mpv render surface");
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
     if !std::path::Path::new("/proc/driver/nvidia/version").exists() {
         return;
     }
@@ -219,13 +227,6 @@ pub fn configure_nvidia_graphics() {
     if wayland && std::env::var("__NV_DISABLE_EXPLICIT_SYNC").is_err() {
         eprintln!("[harbor::mpv_linux] NVIDIA + Wayland detected; setting __NV_DISABLE_EXPLICIT_SYNC=1");
         std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1");
-    }
-    if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
-        eprintln!(
-            "[harbor::mpv_linux] NVIDIA + {} detected; setting WEBKIT_DISABLE_DMABUF_RENDERER=1 to stop WebKit crashing in nvidia-eglcore while releasing Skia GL contexts",
-            if wayland { "Wayland" } else { "X11" }
-        );
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
 }
 

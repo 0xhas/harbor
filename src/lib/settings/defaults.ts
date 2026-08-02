@@ -486,6 +486,7 @@ export const DEFAULT: Settings = {
   iptvEpgOffsetHours: 0,
   sidebarCollapsed: false,
   wrappedButton: true,
+  libraryHero: false,
   mangaEnabled: false,
   feedLocaleBias: true,
   uiLanguage: "en",

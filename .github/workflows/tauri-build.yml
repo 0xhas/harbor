@@ -55,7 +55,8 @@ jobs:
             gstreamer1.0-plugins-good \
             gstreamer1.0-plugins-bad \
             gstreamer1.0-libav \
-            patchelf
+            patchelf \
+            xdg-utils
 
       - name: Install Mac deps
         if: contains(matrix.platform.runner, 'macos')

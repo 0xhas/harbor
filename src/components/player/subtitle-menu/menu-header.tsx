@@ -2,6 +2,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 import type { TrackInfo } from "@/lib/player/bridge";
 import { useT } from "@/lib/i18n";
 import { useAutoSyncHandle } from "@/components/player/autosync/autosync-store";
+import { HoverTooltip } from "@/components/hover-tooltip";
 import { SyncControl } from "./sync-control";
 
 type Props = {
@@ -41,18 +42,19 @@ export function MenuHeader(p: Props) {
         />
 
         {p.onOpenStyleBar && (
-          <button
-            type="button"
-            onClick={() => {
-              p.onOpenStyleBar?.();
-              p.onClose();
-            }}
-            aria-label={tr("Subtitle appearance")}
-            title={tr("Appearance")}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
-          >
-            <SlidersHorizontal size={18} strokeWidth={2} />
-          </button>
+          <HoverTooltip label={tr("Subtitle appearance")} side="bottom" align="end">
+            <button
+              type="button"
+              onClick={() => {
+                p.onOpenStyleBar?.();
+                p.onClose();
+              }}
+              aria-label={tr("Subtitle appearance")}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+            >
+              <SlidersHorizontal size={18} strokeWidth={2} />
+            </button>
+          </HoverTooltip>
         )}
 
         <button

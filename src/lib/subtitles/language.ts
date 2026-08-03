@@ -89,6 +89,15 @@ export function languageName(code: string): string {
   return NAMES[n] || code.toUpperCase();
 }
 
+const IMPLAUSIBLE_LANG_PATTERN = /[=<>{}[\]|\\]|\berror\b|\binvalid\b|\btimed?\s*out\b|\bfailed\b|\brequest\b/i;
+
+export function isPlausibleLang(raw: string | undefined | null): boolean {
+  if (!raw) return false;
+  const s = raw.trim();
+  if (!s || s.length > 24) return false;
+  return !IMPLAUSIBLE_LANG_PATTERN.test(s);
+}
+
 export function langScore(lang: string, preferred: string[]): number {
   if (!preferred.length) return 0;
   const n = normalizeLang(lang);

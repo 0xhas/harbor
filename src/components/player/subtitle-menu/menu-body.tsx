@@ -4,7 +4,7 @@ import { Flag } from "@/components/flag";
 import { markImportedSub } from "@/lib/player/imported-subs";
 import { setSecondarySub } from "@/lib/player/secondary-sub";
 import { useT } from "@/lib/i18n";
-import { Tooltip } from "../transport/tooltip";
+import { HoverTooltip } from "@/components/hover-tooltip";
 import { SearchSection } from "./search-section";
 import { VariantRow } from "./variant-row";
 import { MenuHeader } from "./menu-header";
@@ -179,7 +179,10 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           )}
           {groups.length > 1 && (
             <button
-              onClick={() => setActiveLang(ALL_LANGS)}
+              onClick={() => {
+                setActiveLang(ALL_LANGS);
+                setSearchOpen(false);
+              }}
               className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-[12.5px] font-medium transition-colors ${
                 allLangs
                   ? "bg-elevated text-ink ring-1 ring-edge"
@@ -197,7 +200,10 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             return (
               <button
                 key={g.langKey}
-                onClick={() => setActiveLang(g.langKey)}
+                onClick={() => {
+                  setActiveLang(g.langKey);
+                  setSearchOpen(false);
+                }}
                 className={`group flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-[12.5px] transition-colors ${
                   isActive
                     ? "bg-elevated text-ink ring-1 ring-edge"
@@ -278,10 +284,20 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </p>
           )}
           {search?.status === "idle" && search.lastAdded != null && (
-            <p className="shrink-0 border-b border-edge-soft px-3 py-1.5 text-[11.5px] text-ink-subtle">
-              {search.lastAdded > 0
-                ? tr("Added {count} more subtitles.", { count: search.lastAdded })
-                : tr("No new subtitles found beyond what is already listed.")}
+            <p className="flex shrink-0 items-center gap-2 border-b border-edge-soft px-3 py-1.5 text-[11.5px] text-ink-subtle">
+              <span className="flex-1">
+                {search.lastAdded > 0
+                  ? tr("Added {count} more subtitles.", { count: search.lastAdded })
+                  : tr("No new subtitles found beyond what is already listed.")}
+              </span>
+              <button
+                type="button"
+                onClick={() => search.dismiss()}
+                aria-label={tr("Dismiss")}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+              >
+                <X size={11} strokeWidth={2.6} />
+              </button>
             </p>
           )}
 
@@ -351,7 +367,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
             </button>
             {isTauri && (
-              <Tooltip label={tr("Load a .srt or .ass from your computer")} align="end">
+              <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
                 <button
                   onClick={() => void loadLocal()}
                   className="flex h-full shrink-0 items-center gap-2 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
@@ -359,7 +375,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                   <FolderOpen size={12} strokeWidth={2.2} />
                   {tr("Load file")}
                 </button>
-              </Tooltip>
+              </HoverTooltip>
             )}
           </div>
         </section>

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAutoSyncHandle } from "@/components/player/autosync/autosync-store";
 import { useT } from "@/lib/i18n";
 import { openSyncBar } from "@/lib/player/sub-sync";
-import { Tooltip } from "../transport/tooltip";
+import { HoverTooltip } from "@/components/hover-tooltip";
 
 type Props = {
   canAutoSync: boolean;
@@ -23,9 +23,9 @@ function MaybeTip({
 }) {
   if (!show) return <>{children}</>;
   return (
-    <Tooltip label={label} side="bottom" align="end">
+    <HoverTooltip label={label} side="bottom" align="end">
       {children}
-    </Tooltip>
+    </HoverTooltip>
   );
 }
 

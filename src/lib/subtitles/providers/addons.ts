@@ -2,7 +2,7 @@ import { addonAccepts, type Addon } from "@/lib/addons";
 import { safeFetch } from "@/lib/safe-fetch";
 import { dlog } from "@/lib/debug";
 import type { SubResult, SubSearchQuery } from "../types";
-import { normalizeLang } from "../language";
+import { isPlausibleLang, normalizeLang } from "../language";
 
 type RawAddonSub = {
   id?: string;
@@ -139,6 +139,7 @@ export async function searchAddons(
     targets.map(async ({ addon, id }) => {
       const result = await callOne(addon, type, id, extra);
       dlog(`[addons] ${addon.manifest.name}: ${result.length} subtitles`);
+      if (result.length > 0) dlog(`[addons] ${addon.manifest.name} raw sample`, result[0]);
       return result;
     }),
   );
@@ -148,7 +149,7 @@ export async function searchAddons(
     const addonName = targets[i].addon.manifest.name;
     for (let idx = 0; idx < subs.length; idx++) {
       const s = subs[idx];
-      if (!s.url) continue;
+      if (!s.url || s.url === "about:blank" || !isPlausibleLang(s.lang)) continue;
       // Include addon name and index to ensure unique IDs across different addons
       const uniqueId = s.id
         ? `${addonName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${s.id}`
@@ -160,6 +161,7 @@ export async function searchAddons(
         title: addonName,
         source: "addon",
         format: (s.SubFormat?.toLowerCase() as SubResult["format"]) || undefined,
+        release: s.m || undefined,
       });
     }
   });

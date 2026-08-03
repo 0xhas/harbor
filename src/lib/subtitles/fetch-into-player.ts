@@ -2,6 +2,7 @@ import type { Addon } from "@/lib/addons";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import type { Settings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
+import { markAddedSub } from "./added-subs";
 import { langScore } from "./language";
 import { providerLabel, releaseOf } from "./provider-label";
 import { searchSubtitles, streamMatchScore, type StreamHints } from "./search";
@@ -137,6 +138,7 @@ export async function fetchSubtitlesIntoPlayer(p: SubFetchParams): Promise<SubFe
     selected = await loadFirstWorkingSubtitle(fresh, async (r) => {
       if (!p.isActive()) return false;
       const ok = await p.bridge.addSubtitle(r.url, r.lang, providerLabel(r), false, meta(r));
+      if (ok === true) markAddedSub(r.url);
       return ok === true;
     });
     if (selected) consumed.add(selected);
@@ -150,7 +152,10 @@ export async function fetchSubtitlesIntoPlayer(p: SubFetchParams): Promise<SubFe
   for (const r of extras) {
     if (!p.isActive()) break;
     const ok = await p.bridge.addSubtitle(r.url, r.lang, providerLabel(r), false, meta(r));
-    if (ok === true) added++;
+    if (ok === true) {
+      markAddedSub(r.url);
+      added++;
+    }
   }
   return { added, found: results.length, hints, selected };
 }

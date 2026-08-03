@@ -14,6 +14,7 @@ import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { canStartSubtitleAutoload, subtitleSearchImdbId } from "@/lib/subtitles/autoload";
 import { pickDesiredSubtitleTrack } from "@/lib/subtitles/track-selection";
+import { markAddedSub } from "@/lib/subtitles/added-subs";
 
 export function useTrackAutoload(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
@@ -90,11 +91,19 @@ export function useTrackAutoload(params: {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshReady, setRefreshReady] = useState(false);
   const [lastAdded, setLastAdded] = useState<number | null>(null);
+  const lastAddedTimer = useRef<number | null>(null);
+  const clearLastAddedTimer = () => {
+    if (lastAddedTimer.current != null) {
+      window.clearTimeout(lastAddedTimer.current);
+      lastAddedTimer.current = null;
+    }
+  };
   useEffect(() => {
     refetchRef.current = null;
     setRefreshReady(false);
     setLastAdded(null);
     setRefreshing(false);
+    clearLastAddedTimer();
   }, [src.url]);
 
   useEffect(() => {
@@ -110,10 +119,19 @@ export function useTrackAutoload(params: {
         if (!refetchRef.current || refreshing) return;
         setRefreshing(true);
         setLastAdded(null);
+        clearLastAddedTimer();
         void refetchRef.current()
           .then((n) => setLastAdded(n))
           .catch(() => setLastAdded(0))
-          .finally(() => setRefreshing(false));
+          .finally(() => {
+            setRefreshing(false);
+            clearLastAddedTimer();
+            lastAddedTimer.current = window.setTimeout(() => setLastAdded(null), 5000);
+          });
+      },
+      dismiss: () => {
+        clearLastAddedTimer();
+        setLastAdded(null);
       },
     });
     return () => publishSubtitleSearch(null);
@@ -240,7 +258,10 @@ export function useTrackAutoload(params: {
       return;
     }
     if (choice.url) {
-      void bridgeRef.current?.addSubtitle(choice.url, choice.lang, choice.title, true);
+      const url = choice.url;
+      void bridgeRef.current?.addSubtitle(url, choice.lang, choice.title, true)?.then((ok) => {
+        if (ok) markAddedSub(url);
+      });
     }
   }, [src.url, src.subtitlePreselect, snap.audioTracks.length, snap.subtitleTracks, snap.durationSec, bridgeRef]);
   useEffect(() => {

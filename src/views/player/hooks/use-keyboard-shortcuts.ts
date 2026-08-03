@@ -93,6 +93,27 @@ export function useKeyboardShortcuts(params: {
   const seekForwardStepSec = settings.seekForwardStepSec;
   const seekBackStepShortSec = settings.seekBackStepShortSec;
   const seekForwardStepShortSec = settings.seekForwardStepShortSec;
+  const [subtitleOffsetSec, setSubtitleOffsetSec] = useState<number | null>(null);
+  const subtitleOffsetTimerRef = useRef<number | null>(null);
+  const showSubtitleOffset = (delaySec: number) => {
+    setSubtitleOffsetSec(delaySec);
+    if (subtitleOffsetTimerRef.current != null) {
+      window.clearTimeout(subtitleOffsetTimerRef.current);
+    }
+    subtitleOffsetTimerRef.current = window.setTimeout(() => {
+      setSubtitleOffsetSec(null);
+      subtitleOffsetTimerRef.current = null;
+    }, 1800);
+  };
+  useEffect(
+    () => () => {
+      if (subtitleOffsetTimerRef.current != null) {
+        window.clearTimeout(subtitleOffsetTimerRef.current);
+      }
+    },
+    [],
+  );
+
   const holdRef = useRef<{
     key: string | null;
     timer: number | null;
@@ -369,6 +390,7 @@ export function useKeyboardShortcuts(params: {
         const step = e.shiftKey ? 0.05 : 0.1;
         const delay = round2(snap.subDelaySec - step);
         bridgeRef.current?.setSubDelay(delay);
+        showSubtitleOffset(delay);
         writePlayerPrefs(metaId, { subDelaySec: delay });
         return;
       }
@@ -377,6 +399,7 @@ export function useKeyboardShortcuts(params: {
         const step = e.shiftKey ? 0.05 : 0.1;
         const delay = round2(snap.subDelaySec + step);
         bridgeRef.current?.setSubDelay(delay);
+        showSubtitleOffset(delay);
         writePlayerPrefs(metaId, { subDelaySec: delay });
         return;
       }
@@ -510,5 +533,5 @@ export function useKeyboardShortcuts(params: {
     };
   }, []);
 
-  return { holdSpeedActive };
+  return { holdSpeedActive, subtitleOffsetSec };
 }

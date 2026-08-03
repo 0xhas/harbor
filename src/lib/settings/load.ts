@@ -14,6 +14,10 @@ import {
   sanitizeFullscreenClockStyle,
 } from "@/lib/local-time";
 import { normalizePosterCardSettings } from "@/lib/poster-backdrop-expansion";
+import {
+  sanitizeSubtitleOffsetPosition,
+  sanitizeSubtitleOffsetSize,
+} from "@/lib/player/subtitle-offset";
 
 const RETIRED_GEMINI = new Set([
   "gemini-2.0-flash",
@@ -273,6 +277,12 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
           : DEFAULT.fullscreenClockShowEndTime,
       fullscreenClockSizePx: sanitizeFullscreenClockSize(parsed.fullscreenClockSizePx),
       streaming: { ...DEFAULT.streaming, ...(parsed.streaming ?? {}) },
+      subOffsetIndicatorEnabled:
+        typeof parsed.subOffsetIndicatorEnabled === "boolean"
+          ? parsed.subOffsetIndicatorEnabled
+          : DEFAULT.subOffsetIndicatorEnabled,
+      subOffsetIndicatorPosition: sanitizeSubtitleOffsetPosition(parsed.subOffsetIndicatorPosition),
+      subOffsetIndicatorSize: sanitizeSubtitleOffsetSize(parsed.subOffsetIndicatorSize),
       subProvidersEnabled: {
         ...DEFAULT.subProvidersEnabled,
         ...(parsed.subProvidersEnabled ?? {}),

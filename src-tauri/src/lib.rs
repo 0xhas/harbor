@@ -665,6 +665,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             crash_report::take_startup_crash_report,
+            fonts::install_sub_font,
+            fonts::remove_sub_font,
+            fonts::list_sub_fonts,
             harbor_flush_done,
             harbor_startup_ready,
             close_aux_windows,
@@ -784,6 +787,7 @@ pub fn run() {
             multiview::multiview_visibility,
             multiview::multiview_stop_all,
             http_fetch::harbor_fetch,
+            http_fetch::harbor_upload,
             cf_solver::cf_report,
             discord_rp::discord_set_presence,
             discord_rp::discord_clear,

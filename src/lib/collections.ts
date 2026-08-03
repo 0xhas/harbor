@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { setItemWithRecovery, freeStorageSpace } from "@/lib/storage-recovery";
 import { randomUuid } from "@/lib/uuid";
+import { HARBOR_API_BASE } from "@/lib/config/endpoints";
+
+// Server image URLs are root-relative (/themes/api/images/...); make them absolute so they
+// resolve against harbor.site in Tauri instead of the app origin. data:/blob:/http stay as-is.
+export function absCollectionImage(u: string | undefined): string | undefined {
+  if (typeof u !== "string" || !u) return undefined;
+  if (/^(https?:|data:|blob:)/.test(u)) return u;
+  return u.startsWith("/") ? `${HARBOR_API_BASE}${u}` : u;
+}
 
 const KEY = "harbor.collections.v1";
 const PROFILES_KEY = "harbor.profiles.v1";
@@ -55,6 +64,10 @@ export type Collection = {
   bgImage?: string;
   tags?: string[];
   shared?: boolean;
+  // Set when this collection was saved from someone else's community collection.
+  // Such copies can only ever share the original's link, never be re-listed.
+  sourceHandle?: string;
+  sourceId?: string;
   items: CollectionItem[];
   createdAt: number;
   updatedAt: number;
@@ -138,10 +151,12 @@ function read(): Collection[] {
         id: e.id,
         name: e.name,
         description: typeof e.description === "string" ? e.description : undefined,
-        coverImage: typeof e.coverImage === "string" ? e.coverImage : undefined,
-        bgImage: typeof e.bgImage === "string" ? e.bgImage : undefined,
+        coverImage: absCollectionImage(typeof e.coverImage === "string" ? e.coverImage : undefined),
+        bgImage: absCollectionImage(typeof e.bgImage === "string" ? e.bgImage : undefined),
         tags: tags.length ? tags : undefined,
         shared: e.shared === true ? true : undefined,
+        sourceHandle: typeof e.sourceHandle === "string" ? e.sourceHandle : undefined,
+        sourceId: typeof e.sourceId === "string" ? e.sourceId : undefined,
         items,
         createdAt: typeof e.createdAt === "number" ? e.createdAt : 0,
         updatedAt: typeof e.updatedAt === "number" ? e.updatedAt : 0,
@@ -195,6 +210,46 @@ export function createCollection(name: string): string | null {
   const id = randomUuid();
   const now = Date.now();
   collections.push({ id, name: trimmed, items: [], createdAt: now, updatedAt: now });
+  write(collections);
+  return id;
+}
+
+export function saveCommunityCollection(source: {
+  handle: string;
+  id: string;
+  name: string;
+  description?: string;
+  coverImage?: string;
+  bgImage?: string;
+  tags?: string[];
+  items: CollectionItem[];
+}): string | null {
+  const collections = read();
+  const existing = collections.find(
+    (c) => c.sourceHandle === source.handle && c.sourceId === source.id,
+  );
+  if (existing) return existing.id;
+  if (collections.length >= MAX_COLLECTIONS) return null;
+  const id = randomUuid();
+  const now = Date.now();
+  collections.push({
+    id,
+    name: source.name.trim().slice(0, MAX_COLLECTION_NAME) || "Saved collection",
+    description: source.description,
+    coverImage: source.coverImage,
+    bgImage: source.bgImage,
+    tags: source.tags && source.tags.length ? source.tags.slice(0, MAX_COLLECTION_TAGS) : undefined,
+    sourceHandle: source.handle,
+    sourceId: source.id,
+    items: source.items.slice(0, MAX_COLLECTION_ITEMS).map((it) => ({
+      id: it.id,
+      type: it.type,
+      name: it.name,
+      poster: it.poster,
+    })),
+    createdAt: now,
+    updatedAt: now,
+  });
   write(collections);
   return id;
 }

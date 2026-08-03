@@ -26,7 +26,9 @@ import { fetchSeasonEpisodes } from "@/lib/series-episodes";
 import { aniZipByAnidb, aniZipByAnilist, aniZipByKitsu, aniZipByMal } from "@/lib/providers/anizip";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { resolvePreferredAnimeTitle } from "@/lib/anime-title";
+import { stripFranchiseSuffix } from "@/lib/providers/jikan";
 import { getAnimeCwId } from "@/lib/anime-cw-ids";
+import { aniZipLookupKey, applyAniZipEpisode, needsAniZipSyncIds } from "@/lib/cw-anime-episode";
 
 type Props = {
   item: LibraryItem;
@@ -286,7 +288,8 @@ export const ContinueCard = memo(function ContinueCard({
         background: item.background,
       };
 
-  const displayTitle = translatedTitle || hydratedMeta?.name?.trim() || item.name;
+  const rawTitle = translatedTitle || hydratedMeta?.name?.trim() || item.name;
+  const displayTitle = isAnimeCwItem(item) ? stripFranchiseSuffix(rawTitle) || rawTitle : rawTitle;
 
   const onOpenDetails = () => {
     const isAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
@@ -312,32 +315,19 @@ export const ContinueCard = memo(function ContinueCard({
         const epNum = Number((item.state?.video_id ?? "").split(":")[2]);
         if (Number.isFinite(epNum) && epNum > 0) episode = { season: 1, episode: epNum };
       }
-      if (episode && episode.tvdbEpisodeId == null) {
-        const epRef = episode;
-        const [scheme, rawId] = item._id.split(":");
-        const nid = Number(rawId);
-        if (Number.isFinite(nid)) {
-          const lookup =
-            scheme === "mal"
-              ? aniZipByMal
-              : scheme === "anilist"
-                ? aniZipByAnilist
-                : scheme === "anidb"
-                  ? aniZipByAnidb
-                  : aniZipByKitsu;
-          const az = await lookup(nid).catch(() => null);
-          const azEp = az?.episodes?.[String(epRef.episode)];
-          if (azEp?.tvdbId) epRef.tvdbEpisodeId = azEp.tvdbId;
-          if (!kitsuVideo) {
-            const m = az?.mappings;
-            if (m?.kitsu_id) epRef.kitsuStreamId = `kitsu:${m.kitsu_id}:${epRef.episode}`;
-            if (m?.imdb_id) epRef.imdbId = m.imdb_id;
-            if (azEp?.seasonNumber != null && azEp?.episodeNumber != null) {
-              epRef.imdbSeason = azEp.seasonNumber;
-              epRef.imdbEpisode = azEp.episodeNumber;
-            }
-          }
-        }
+    }
+    if (needsAniZipSyncIds(item._id, episode) && episode) {
+      const key = aniZipLookupKey(item._id);
+      if (key) {
+        const lookup =
+          key.scheme === "mal"
+            ? aniZipByMal
+            : key.scheme === "anilist"
+              ? aniZipByAnilist
+              : key.scheme === "anidb"
+                ? aniZipByAnidb
+                : aniZipByKitsu;
+        episode = applyAniZipEpisode(episode, await lookup(key.id).catch(() => null));
       }
     }
     if (episode && !episode.sourceMetaId && item._id.startsWith("tt")) {

@@ -717,7 +717,7 @@ pub async fn mpv_start(
         let _ = mpv.set_property("secondary-sub-visibility", "no");
     }
 
-    if let Some(fonts) = crate::fonts::locate_fonts_dir(&app) {
+    if let Some(fonts) = crate::fonts::sub_fonts_dir(&app) {
         if let Some(s) = fonts.to_str() {
             let _ = mpv.set_property("sub-fonts-dir", s);
         }

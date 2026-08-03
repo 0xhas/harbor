@@ -248,6 +248,7 @@ export function CommunityCollectionEditor({
             onUpload={async (file) => {
               const local = await fileToCollectionCover(file);
               setCollectionCover(id, local);
+              await publishCollections(readCollections()).catch(() => {});
               try {
                 const { url } = await uploadCollectionCover(id, file);
                 if (url) setCollectionCover(id, url);
@@ -268,6 +269,7 @@ export function CommunityCollectionEditor({
             onUpload={async (file) => {
               const local = await fileToCollectionBackground(file);
               setCollectionBackground(id, local);
+              await publishCollections(readCollections()).catch(() => {});
               try {
                 const { url } = await uploadCollectionBackground(id, file);
                 if (url) setCollectionBackground(id, url);

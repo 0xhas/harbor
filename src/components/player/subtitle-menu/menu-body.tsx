@@ -1,4 +1,4 @@
-import { Check, FolderOpen, Languages, Loader2, Search as SearchIcon, X } from "lucide-react";
+import { Check, FolderOpen, Languages, Loader2, RotateCw, Search as SearchIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Flag } from "@/components/flag";
 import { markImportedSub } from "@/lib/player/imported-subs";
@@ -81,14 +81,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
     () => pickBestMatch(visibleVariants, search?.hints ?? null),
     [visibleVariants, search],
   );
-  const bestMatchHint = useMemo(() => {
-    if (!best) return null;
-    if (best.track.id === selectedId) return tr("Already on the closest match for this release");
-    const why = best.reasons.slice(0, 2).join(", ");
-    return why
-      ? tr("Switch to {name}: {why}", { name: variantTitle(best.track), why })
-      : tr("Switch to {name}", { name: variantTitle(best.track) });
-  }, [best, selectedId, tr]);
+  const betterMatch = best && best.track.id !== selectedId ? best : null;
 
   const applyBestMatch = () => {
     if (!best || best.track.id === selectedId) return;
@@ -125,11 +118,10 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       <MenuHeader
         count={tracks.length}
         selectedTrack={selectedTrack}
+        delaySec={delaySec}
         delayNonZero={delayNonZero}
         onOpenStyleBar={onOpenStyleBar}
         onClose={onClose}
-        onBestMatch={applyBestMatch}
-        bestMatchHint={bestMatchHint}
       />
 
       {/* ── Body ── */}
@@ -262,6 +254,23 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
+          {!searchOpen && betterMatch && (
+            <div className="flex shrink-0 items-center gap-3 border-b border-edge-soft bg-accent/[0.07] px-3 py-2">
+              <span className="min-w-0 flex-1 truncate text-[12px] text-ink-muted">
+                <span className="font-semibold text-ink">{tr("Better match")}</span>
+                <span className="text-ink-subtle"> · </span>
+                {variantTitle(betterMatch.track)}
+              </span>
+              <button
+                type="button"
+                onClick={applyBestMatch}
+                className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-[11.5px] font-semibold text-canvas transition-[filter] hover:brightness-110"
+              >
+                {tr("Use it")}
+              </button>
+            </div>
+          )}
+
           {search?.status === "searching" && (
             <p className="flex shrink-0 items-center gap-2 border-b border-edge-soft px-3 py-1.5 text-[11.5px] text-ink-subtle">
               <Loader2 size={12} className="animate-spin motion-reduce:animate-none" />
@@ -305,6 +314,23 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                       }
                     />
                   ))}
+                  {search && (
+                    <button
+                      type="button"
+                      disabled={search.status === "searching"}
+                      onClick={() => search.refresh()}
+                      className="mt-1 flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-[12px] font-medium text-ink-subtle transition-colors hover:bg-raised hover:text-ink disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-subtle"
+                    >
+                      <RotateCw
+                        size={12}
+                        strokeWidth={2.2}
+                        className={search.status === "searching" ? "animate-spin motion-reduce:animate-none" : ""}
+                      />
+                      {search.status === "searching"
+                        ? tr("Searching…")
+                        : tr("Not the one? Search every source again")}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

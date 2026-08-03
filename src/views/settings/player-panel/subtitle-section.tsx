@@ -1,6 +1,8 @@
 import { Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import godfatherStill from "@/assets/godfather-offer.svg";
+import { sfntFamilyName } from "@/lib/font-family-name";
+import { saveFontData } from "@/lib/font-storage";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ColorPopoverTrigger } from "../color-picker";
@@ -140,9 +142,12 @@ export function SubtitleStylePanel() {
             type="range"
             min={1}
             max={6}
-            step={1}
+            step={0.5}
             value={Math.max(1, settings.subBorderSize)}
-            onChange={(e) => update({ subBorderSize: parseInt(e.target.value, 10) })}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              if (Number.isFinite(v)) update({ subBorderSize: Math.min(6, Math.max(1, v)) });
+            }}
             className="h-1 w-full appearance-none rounded-full bg-edge-soft accent-ink"
           />
         </SubField>
@@ -430,15 +435,20 @@ function FontPicker() {
         r.readAsDataURL(file);
       });
       const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      const family = sfntFamilyName(await file.arrayBuffer()) ?? undefined;
+      const face = new FontFace(`harbor-font-${id}`, `url(${dataUrl})`, { display: "swap" });
+      await face.load();
+      await saveFontData(id, dataUrl);
+      document.fonts.add(face);
       const baseName = file.name.replace(/\.(ttf|otf|woff2?|ttc)$/i, "");
       const next = [
         ...customFonts,
-        { id, name: baseName || `Custom ${customFonts.length + 1}`, dataUrl, format: formatMap[ext] },
+        { id, name: baseName || `Custom ${customFonts.length + 1}`, family, format: formatMap[ext] },
       ];
       update({ customFonts: next, subFontFamily: `custom:${id}` });
     } catch (e) {
       console.warn("[fonts] read failed", e);
-      setError("Couldn't read that font file.");
+      setError("Couldn't save that font. It may be invalid, or storage is full.");
     }
   };
 

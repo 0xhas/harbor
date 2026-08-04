@@ -3,10 +3,15 @@ import type { PlayerBridge } from "@/lib/player/bridge";
 import { t } from "@/lib/i18n";
 import { writePlayerPrefs } from "@/lib/player-prefs";
 import { markImportedSub } from "@/lib/player/imported-subs";
+import { writeRememberedSub } from "@/lib/subtitles/subtitle-memory";
 
 const SUB_EXT = /\.(srt|ass|ssa|vtt|sub)$/i;
 
-export function useSubDrop(bridgeRef: RefObject<PlayerBridge | null>, metaId: string) {
+export function useSubDrop(
+  bridgeRef: RefObject<PlayerBridge | null>,
+  metaId: string,
+  mediaKey: string,
+) {
   const [toast, setToast] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
@@ -29,6 +34,7 @@ export function useSubDrop(bridgeRef: RefObject<PlayerBridge | null>, metaId: st
               if (ok) {
                 writePlayerPrefs(metaId, { subsOff: false });
                 markImportedSub(title);
+                writeRememberedSub(mediaKey, { source: path, title, imported: true });
               }
               setToast(ok ? t("Loaded {name}", { name }) : t("Couldn't load {name}", { name }));
               if (timer.current) window.clearTimeout(timer.current);
@@ -47,7 +53,7 @@ export function useSubDrop(bridgeRef: RefObject<PlayerBridge | null>, metaId: st
       un?.();
       if (timer.current) window.clearTimeout(timer.current);
     };
-  }, [bridgeRef, metaId]);
+  }, [bridgeRef, metaId, mediaKey]);
 
   return toast;
 }

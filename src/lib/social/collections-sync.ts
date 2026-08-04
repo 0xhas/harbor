@@ -65,6 +65,7 @@ function normalizeCollection(raw: unknown): Collection | null {
     bgImage: absCollectionImage(typeof e.bgImage === "string" ? e.bgImage : undefined),
     tags: tags.length ? tags.slice(0, 8) : undefined,
     shared: e.shared === true ? true : undefined,
+    numbered: e.numbered === true ? true : undefined,
     items,
     createdAt: typeof e.createdAt === "number" ? e.createdAt : 0,
     updatedAt: typeof e.updatedAt === "number" ? e.updatedAt : 0,

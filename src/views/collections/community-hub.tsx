@@ -408,7 +408,6 @@ function CommunityDetail({
   const poster = items.find((it) => it.poster)?.poster;
   const backdrop = collection.bgImage || poster;
   const backdropSharp = !!collection.bgImage;
-  const cover = collection.coverImage || poster;
   const count = items.length;
 
   const open = (item: CollectionItem) => {
@@ -437,7 +436,7 @@ function CommunityDetail({
       </div>
 
       <div className="relative mx-auto flex w-full max-w-[1400px] flex-col gap-9 px-5 pb-24 pt-24 sm:px-8 lg:px-12 lg:pt-28">
-        <div>
+        <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onBack}
@@ -446,67 +445,37 @@ function CommunityDetail({
             <ArrowLeft size={17} strokeWidth={2.2} className="dir-icon" />
             {t("Collections")}
           </button>
+          <SaveCollectionButton collection={collection} />
         </div>
 
-        <header className="flex flex-col gap-6 md:flex-row md:items-end md:gap-8">
-          <div className="w-full max-w-[420px] shrink-0 overflow-hidden rounded-[20px] border border-edge-soft shadow-[0_20px_60px_-24px_rgba(0,0,0,0.75)]">
-            <div
-              className="relative aspect-[16/9] w-full"
-              style={cover ? undefined : { background: posterPlate(seed) }}
-            >
-              {cover && (
-                <img
-                  src={cover}
-                  alt=""
-                  draggable={false}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              )}
-            </div>
-          </div>
-          <div className="flex min-w-0 flex-col gap-3 pb-1">
-            <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
-              {t("Collection")}
-            </span>
-            <h1 className="font-display text-[40px] font-medium leading-[1.04] tracking-tight text-ink">
-              {collection.name}
-            </h1>
-            <div className="flex items-center gap-2.5">
-              <UserHoverCard handle={collection.handle}>
-                <button
-                  type="button"
-                  onClick={() => requestOpenProfile(collection.handle)}
-                  aria-label={t("Open {alias} profile", { alias: collection.displayName })}
-                  className="shrink-0 rounded-full"
-                >
-                  <Avatar name={collection.displayName} src={collection.avatarUrl} size={28} />
-                </button>
-              </UserHoverCard>
-              <div className="flex min-w-0 flex-col">
-                <UserHoverCard handle={collection.handle}>
-                  <button
-                    type="button"
-                    onClick={() => requestOpenProfile(collection.handle)}
-                    className="truncate text-start text-[14px] font-semibold text-ink transition-colors hover:text-accent"
-                  >
-                    {collection.displayName}
-                  </button>
-                </UserHoverCard>
-                <span className="truncate text-[12.5px] text-ink-subtle">@{collection.handle}</span>
-              </div>
-            </div>
-            {collection.description && (
-              <p className="max-w-2xl text-[15px] leading-relaxed text-ink-muted">
-                {collection.description}
-              </p>
-            )}
-            <p className="text-[13px] tabular-nums text-ink-subtle">
+        <header className="flex min-w-0 max-w-4xl flex-col gap-4">
+          <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
+            {t("Collection")}
+          </span>
+          <h1 className="font-display text-[clamp(2.6rem,6vw,4.25rem)] font-medium leading-[1.02] tracking-tight text-ink">
+            {collection.name}
+          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <UserHoverCard handle={collection.handle}>
+              <button
+                type="button"
+                onClick={() => requestOpenProfile(collection.handle)}
+                aria-label={t("Open {alias} profile", { alias: collection.displayName })}
+                className="inline-flex items-center gap-2 rounded-full border border-edge-soft bg-elevated/60 py-1 ps-1 pe-3 backdrop-blur-md transition-colors hover:bg-raised"
+              >
+                <Avatar name={collection.displayName} src={collection.avatarUrl} size={24} />
+                <span className="text-[13px] font-semibold text-ink">@{collection.handle}</span>
+              </button>
+            </UserHoverCard>
+            <span className="text-[13px] tabular-nums text-ink-subtle">
               {count === 1 ? t("{n} title", { n: count }) : t("{n} titles", { n: count })}
-            </p>
-            <div className="pt-1.5">
-              <SaveCollectionButton collection={collection} />
-            </div>
+            </span>
           </div>
+          {collection.description && (
+            <p className="max-w-2xl text-[15px] leading-relaxed text-ink-muted">
+              {collection.description}
+            </p>
+          )}
         </header>
 
         {count === 0 ? (

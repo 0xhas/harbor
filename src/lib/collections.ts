@@ -64,6 +64,8 @@ export type Collection = {
   bgImage?: string;
   tags?: string[];
   shared?: boolean;
+  // Show sequential rank numbers (1, 2, 3...) on the cards. Opt-in per collection.
+  numbered?: boolean;
   // Set when this collection was saved from someone else's community collection.
   // Such copies can only ever share the original's link, never be re-listed.
   sourceHandle?: string;
@@ -155,6 +157,7 @@ function read(): Collection[] {
         bgImage: absCollectionImage(typeof e.bgImage === "string" ? e.bgImage : undefined),
         tags: tags.length ? tags : undefined,
         shared: e.shared === true ? true : undefined,
+        numbered: e.numbered === true ? true : undefined,
         sourceHandle: typeof e.sourceHandle === "string" ? e.sourceHandle : undefined,
         sourceId: typeof e.sourceId === "string" ? e.sourceId : undefined,
         items,
@@ -380,6 +383,16 @@ export function setCollectionShared(collectionId: string, shared: boolean): void
   if (!c) return;
   if (!!c.shared === shared) return;
   c.shared = shared ? true : undefined;
+  c.updatedAt = Date.now();
+  write(collections);
+}
+
+export function setCollectionNumbered(collectionId: string, numbered: boolean): void {
+  const collections = read();
+  const c = collections.find((x) => x.id === collectionId);
+  if (!c) return;
+  if (!!c.numbered === numbered) return;
+  c.numbered = numbered ? true : undefined;
   c.updatedAt = Date.now();
   write(collections);
 }

@@ -435,8 +435,9 @@ function FontPicker() {
         r.readAsDataURL(file);
       });
       const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-      const family = sfntFamilyName(await file.arrayBuffer()) ?? undefined;
-      const face = new FontFace(`harbor-font-${id}`, `url(${dataUrl})`, { display: "swap" });
+      const bytes = await file.arrayBuffer();
+      const family = sfntFamilyName(bytes) ?? undefined;
+      const face = new FontFace(`harbor-font-${id}`, bytes, { display: "swap" });
       await face.load();
       await saveFontData(id, dataUrl);
       document.fonts.add(face);
@@ -470,6 +471,30 @@ function FontPicker() {
 
   const confirmFont = customFonts.find((f) => `custom:${f.id}` === `custom:${confirmId}`);
 
+  const [unloaded, setUnloaded] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (typeof document === "undefined" || !("fonts" in document)) return;
+    let cancelled = false;
+    const check = () => {
+      const missing = new Set<string>();
+      for (const f of customFonts) {
+        let ok = false;
+        document.fonts.forEach((face) => {
+          if (face.family === `harbor-font-${f.id}` && face.status === "loaded") ok = true;
+        });
+        if (!ok) missing.add(f.id);
+      }
+      if (!cancelled) setUnloaded(missing);
+    };
+    check();
+    void document.fonts.ready.then(check);
+    const t = window.setTimeout(check, 1200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [customFonts]);
+
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
@@ -483,15 +508,19 @@ function FontPicker() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {allFonts.map((f) => {
           const sel = settings.subFontFamily === f.id;
+          const broken = f.custom && unloaded.has(f.id.slice("custom:".length));
           return (
             <div key={f.id} className="relative">
               <button
                 type="button"
                 onClick={() => update({ subFontFamily: f.id })}
+                title={broken ? t("This font did not load. Remove it and upload it again.") : undefined}
                 className={`flex h-11 w-full items-center justify-center rounded-xl border px-2 text-[13px] font-semibold transition-colors ${
-                  sel
-                    ? "border-ink bg-elevated text-ink"
-                    : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge hover:text-ink"
+                  broken
+                    ? "border-danger/40 bg-danger/10 text-danger"
+                    : sel
+                      ? "border-ink bg-elevated text-ink"
+                      : "border-edge-soft bg-canvas/40 text-ink-muted hover:border-edge hover:text-ink"
                 }`}
                 style={{ fontFamily: previewFamily(f.id) }}
               >

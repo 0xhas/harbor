@@ -100,6 +100,8 @@ export function HeroCarousel({
     if (active >= slides.length) setActive(0);
   }, [slides.length, active]);
 
+  const safeActive = slides.length > 0 ? Math.min(Math.max(active, 0), slides.length - 1) : 0;
+
   if (slides.length === 0) {
     return (
       <div
@@ -184,7 +186,7 @@ export function HeroCarousel({
     }
   };
 
-  const trackTransform = `translate3d(calc(${-active * 100}% + ${offset - active * SLIDE_GAP_PX}px), 0, 0)`;
+  const trackTransform = `translate3d(calc(${-safeActive * 100}% + ${offset - safeActive * SLIDE_GAP_PX}px), 0, 0)`;
 
   const slideStyle = (isActive: boolean, distance: number): React.CSSProperties => {
     if (!billboard) {
@@ -248,8 +250,8 @@ export function HeroCarousel({
           }
         >
           {slides.map((s, i) => {
-            const isActive = i === active;
-            const distance = Math.abs(i - active);
+            const isActive = i === safeActive;
+            const distance = Math.abs(i - safeActive);
             const shouldMount = distance <= 1 || dragging;
             return (
               <div
@@ -320,7 +322,7 @@ export function HeroCarousel({
               onClick={() => setActive(i)}
               aria-label={t("Slide {n}", { n: i + 1 })}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === active ? "w-12 bg-ink" : "w-6 bg-ink-muted/70 hover:bg-ink-muted"
+                i === safeActive ? "w-12 bg-ink" : "w-6 bg-ink-muted/70 hover:bg-ink-muted"
               }`}
             />
           ))}

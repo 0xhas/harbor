@@ -470,6 +470,7 @@ pub fn run() {
     let _ = rustls::crypto::ring::default_provider().install_default();
     trailer::sweep_cache();
     std::thread::spawn(temp_prune::sweep_temp);
+
     let proxy_state = tauri::async_runtime::block_on(stream_proxy::ProxyState::start())
         .unwrap_or_else(|e| {
             eprintln!("[stream-proxy] failed to start: {}", e);
@@ -598,6 +599,15 @@ pub fn run() {
             }
             cast_server::ensure_started_on_setup(&app.handle());
             torrent_engine::ensure_started_on_setup(&app.handle());
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    use tauri::Manager;
+                    if let Ok(base) = handle.path().app_cache_dir() {
+                        let _ = temp_prune::sweep_mpv_cache(base.join("mpv-cache"));
+                    }
+                });
+            }
             media_controls::ensure_started_on_setup(&app.handle());
             {
                 let handle = app.handle().clone();

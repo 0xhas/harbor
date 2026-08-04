@@ -109,3 +109,15 @@ test("family-name parsing survives junk instead of guessing", () => {
   assert.equal(sfntFamilyName(new ArrayBuffer(0)), null);
   assert.equal(sfntFamilyName(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).buffer), null);
 });
+
+test("an uploaded font is registered from bytes, not a megabyte-long css url", () => {
+  assert.match(picker, /const bytes = await file\.arrayBuffer\(\);/);
+  assert.match(picker, /new FontFace\(`harbor-font-\$\{id\}`, bytes, \{ display: "swap" \}\)/);
+  assert.doesNotMatch(picker, /new FontFace\(`harbor-font-\$\{id\}`, `url\(/);
+});
+
+test("a font that failed to load is shown as broken instead of silently falling back", () => {
+  assert.match(picker, /face\.family === `harbor-font-\$\{f\.id\}` && face\.status === "loaded"/);
+  assert.match(picker, /const broken = f\.custom && unloaded\.has/);
+  assert.match(picker, /border-danger\/40 bg-danger\/10 text-danger/);
+});

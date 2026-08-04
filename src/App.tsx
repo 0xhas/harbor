@@ -104,6 +104,7 @@ import { CharacterFavoritesProvider } from "@/lib/character-favorites";
 import { MangaFavoritesProvider } from "@/lib/manga-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
 import { useSettings } from "@/lib/settings";
+import { torrentEngineSetOptions } from "@/lib/torrent/local-engine";
 import { effectiveBinding, eventToBinding, shouldHandleGlobalKeyboardEvent } from "@/lib/hotkeys";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
 import { requestOpenProfile, requestEditProfile } from "@/lib/social/open-profile";
@@ -701,6 +702,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
     }, 1500);
     return () => window.clearTimeout(id);
   }, []);
+  useEffect(() => {
+    void torrentEngineSetOptions(
+      settings.streamCacheDir || null,
+      settings.streamCacheRetentionHours,
+      settings.streamCacheMaxGb,
+      false,
+    );
+  }, [settings.streamCacheDir, settings.streamCacheRetentionHours, settings.streamCacheMaxGb]);
   const baseLayout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],

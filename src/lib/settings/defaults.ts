@@ -315,6 +315,7 @@ export const DEFAULT: Settings = {
   mpvHwdec: "auto",
   mpvBufferBoost: false,
   mpvDownmixStereo: false,
+  volumeBoostMax: 2,
   mpvTweaks: {},
   playerSvp: false,
   svpVpyPath: "",

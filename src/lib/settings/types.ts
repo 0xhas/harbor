@@ -368,6 +368,7 @@ export type Settings = {
   mpvHwdec: "auto" | "on" | "off";
   mpvBufferBoost: boolean;
   mpvDownmixStereo: boolean;
+  volumeBoostMax: number;
   mpvTweaks: Record<string, string>;
   playerSvp: boolean;
   svpVpyPath: string;

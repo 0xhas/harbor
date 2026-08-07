@@ -1,6 +1,5 @@
 import { safeFetch } from "@/lib/safe-fetch";
 import { createRequestScheduler } from "@/lib/request-scheduler";
-import { imageRequestLang } from "./tmdb-image-lang";
 
 export const TMDB = "https://api.themoviedb.org/3";
 export const IMG = "https://image.tmdb.org/t/p";
@@ -27,9 +26,13 @@ function logTmdbFailure(path: string, status: number, body: string): void {
   if (now - lastFailureLogged < 1000) return;
   lastFailureLogged = now;
   if (status === 401) {
-    console.warn(`[tmdb] 401 unauthorized on ${path} — TMDB key invalid or revoked. ${body.slice(0, 200)}`);
+    console.warn(
+      `[tmdb] 401 unauthorized on ${path} — TMDB key invalid or revoked. ${body.slice(0, 200)}`,
+    );
   } else if (status === 429) {
-    console.warn(`[tmdb] 429 rate-limited on ${path} — TMDB throttling this IP/key. ${body.slice(0, 200)}`);
+    console.warn(
+      `[tmdb] 429 rate-limited on ${path} — TMDB throttling this IP/key. ${body.slice(0, 200)}`,
+    );
   } else if (status === 404) {
     console.warn(`[tmdb] 404 not found on ${path} — TMDB does not have this resource.`);
   } else {
@@ -98,7 +101,7 @@ export async function get<T>(
   if (!key) return null;
   const url = new URL(`${TMDB}/${path}`);
   url.searchParams.set("api_key", key);
-  const lang = effectiveTmdbLanguage() || imageRequestLang();
+  const lang = effectiveTmdbLanguage();
   if (lang && !params.language) url.searchParams.set("language", lang);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const target = url.toString();
@@ -107,7 +110,8 @@ export async function get<T>(
       const backoffMs = Math.min(2000, 250 * 2 ** attempt);
       const { status, data } = await tmdbRequests.schedule(target, async () => {
         const result = await fetchTmdbOnce<T>(target, path);
-        if (result.status === 429 || (result.status >= 500 && result.status < 600)) tmdbRequests.pauseFor(backoffMs);
+        if (result.status === 429 || (result.status >= 500 && result.status < 600))
+          tmdbRequests.pauseFor(backoffMs);
         return result;
       });
       if (status === 429 || (status >= 500 && status < 600)) {

@@ -68,6 +68,14 @@ function toLocalISO(epochSeconds: number): string {
   return `${y}-${m}-${day}`;
 }
 
+function toLocalTime(epochSeconds: number): string {
+  const d = new Date(epochSeconds * 1000);
+  const hour = d.getHours();
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  const period = hour >= 12 ? "PM" : "AM";
+  return `${hour12}:${pad(d.getMinutes())} ${period}`;
+}
+
 function stripHtml(s: string): string {
   return s
     .replace(/<br\s*\/?>/gi, " ")
@@ -144,6 +152,7 @@ export async function fetchAniListAiringCalendar(
         poster: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
         background: media.bannerImage ?? null,
         releaseDate: toLocalISO(node.airingAt),
+        releaseTime: toLocalTime(node.airingAt),
         isAnime: true,
         overview: media.description ? stripHtml(media.description) : "",
         voteAverage: media.averageScore != null ? media.averageScore / 10 : 0,

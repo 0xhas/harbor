@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { Clock, X } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
 import type { CalendarItem } from "@/lib/calendar";
 import { useT } from "@/lib/i18n";
@@ -124,6 +124,12 @@ function DayModalRow({
           )}
         </div>
         <p className="text-[14px] font-semibold leading-tight text-ink">{item.name}</p>
+        {item.releaseTime && (
+          <p className="text-[11px] font-medium text-ink-subtle">
+            <Clock size={11} className="mr-1 inline text-rose-300" />
+            {item.releaseTime}
+          </p>
+        )}
         {item.overview && (
           <p className="line-clamp-2 text-[12px] leading-relaxed text-ink-muted">{item.overview}</p>
         )}

@@ -105,6 +105,7 @@ async function mapDubFeedToCalendar(year: number, month: number): Promise<Calend
     if (media.format === "MOVIE" || e.episodeNumber == null) continue;
     const dateISO = e.episodeDate ? toLocalISO(e.episodeDate) : "";
     if (!inMonth(dateISO, year, month)) continue;
+    const time = e.episodeDate ? toLocalTime(e.episodeDate) : "";
     const title =
       media.title?.english?.trim() ||
       media.title?.romaji?.trim() ||
@@ -123,6 +124,7 @@ async function mapDubFeedToCalendar(year: number, month: number): Promise<Calend
       poster: media.coverImage?.extraLarge ?? media.coverImage?.medium ?? null,
       background: media.bannerImage ?? null,
       releaseDate: dateISO,
+      releaseTime: time || undefined,
       isAnime: true,
       overview: "",
       voteAverage: 0,
@@ -139,6 +141,15 @@ function toLocalISO(isoDateTime: string): string {
   const m = pad(d.getMonth() + 1);
   const day = pad(d.getDate());
   return `${y}-${m}-${day}`;
+}
+
+function toLocalTime(isoDateTime: string): string {
+  const d = new Date(isoDateTime);
+  if (Number.isNaN(d.getTime())) return "";
+  const hour = d.getHours();
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  const period = hour >= 12 ? "PM" : "AM";
+  return `${hour12}:${pad(d.getMinutes())} ${period}`;
 }
 
 export async function fetchSimklCalendar(

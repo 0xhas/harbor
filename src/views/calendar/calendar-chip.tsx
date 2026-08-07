@@ -135,7 +135,10 @@ function ChipTooltip({
             </span>
           )}
           <p className="text-[14px] font-semibold leading-tight text-ink">{item.name}</p>
-          <p className="text-[12px] text-ink-muted">{dateLabel}</p>
+          <p className="text-[12px] text-ink-muted">
+            {dateLabel}
+            {item.releaseTime ? ` · ${item.releaseTime}` : ""}
+          </p>
           {item.voteAverage > 0 && (
             <p className="text-[11.5px] text-ink-muted">
               <span className="text-amber-300">★</span> {item.voteAverage.toFixed(1)}

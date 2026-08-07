@@ -66,10 +66,12 @@ export function EmptyState({
   source,
   filter,
   watchlistOnly,
+  animeDub,
 }: {
   source: Source;
   filter: CalendarFilter;
   watchlistOnly: boolean;
+  animeDub: boolean;
 }) {
   const t = useT();
   const heading =
@@ -84,7 +86,7 @@ export function EmptyState({
             : source === "simkl-anticipated"
               ? t("No Simkl premieres this month")
               : source === "anime"
-                ? t("Nothing airing this month")
+                ? t(animeDub ? "No dubbed episodes this month" : "Nothing airing this month")
                 : t("Nothing this month");
   const filterKind =
     filter === "movie" ? t("movies") : filter === "tv" ? t("TV") : t("anime");
@@ -111,7 +113,9 @@ export function EmptyState({
                 )
               : source === "anime"
                 ? t(
-                    "AniList has no anime episodes scheduled to air this month. Try a different month.",
+                    animeDub
+                      ? "The dub schedule has no episodes releasing this month. Try a different month."
+                      : "AniList has no anime episodes scheduled to air this month. Try a different month.",
                   )
                 : watchlistOnly
             ? t(

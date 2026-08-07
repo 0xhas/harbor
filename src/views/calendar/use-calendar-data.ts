@@ -8,6 +8,7 @@ import {
 import {
   fetchAnticipatedCalendar,
   fetchAniListAiringCalendar,
+  fetchAnimeDubCalendar,
   fetchLibraryCalendar,
   fetchSimklCalendar,
   fetchSimklPremieresCalendar,
@@ -24,6 +25,7 @@ type Args = {
   settings: Settings;
   year: number;
   month: number;
+  animeDub: boolean;
 };
 
 export function useCalendarData({
@@ -34,6 +36,7 @@ export function useCalendarData({
   settings,
   year,
   month,
+  animeDub,
 }: Args) {
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,7 +92,11 @@ export function useCalendarData({
         return run(fetchSimklPremieresCalendar(year, month));
       }
       if (source === "anime") {
-        return run(fetchAniListAiringCalendar(year, month));
+        return run(
+          animeDub
+            ? fetchAnimeDubCalendar(year, month)
+            : fetchAniListAiringCalendar(year, month),
+        );
       }
       if (source === "anticipated") {
         return run(fetchAnticipatedCalendar(year, month));
@@ -146,6 +153,7 @@ export function useCalendarData({
     settings.customCalendar.includeTraktWatchlist,
     year,
     month,
+    animeDub,
   ]);
 
   useEffect(() => {

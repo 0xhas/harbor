@@ -46,6 +46,7 @@ export function CalendarView() {
   const [month, setMonth] = useState(today.getMonth());
   const [filter, setFilter] = useState<CalendarFilter>("all");
   const [watchlistOnly, setWatchlistOnly] = useState(false);
+  const [animeDub, setAnimeDub] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   useScrollMemory("calendar", scrollRef);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
@@ -97,6 +98,7 @@ export function CalendarView() {
     settings,
     year,
     month,
+    animeDub,
   });
 
   useEffect(() => {
@@ -170,6 +172,7 @@ export function CalendarView() {
 
   const showAllControls = source === "all";
   const showPremiereFilters = source === "simkl-anticipated";
+  const hideTypeTag = source === "anime";
   const filtersActiveCount = buildActiveCount(settings.customCalendar);
   const filters = settings.hideContent.anime ? FILTERS.filter((f) => f.id !== "anime") : FILTERS;
 
@@ -183,7 +186,14 @@ export function CalendarView() {
   } else if (loading && filtered.length === 0) {
     body = <CalendarSkeleton />;
   } else if (filtered.length === 0) {
-    body = <EmptyState source={source} filter={filter} watchlistOnly={watchlistOnly} />;
+    body = (
+      <EmptyState
+        source={source}
+        filter={filter}
+        watchlistOnly={watchlistOnly}
+        animeDub={animeDub}
+      />
+    );
   } else {
     body = (
       <MonthGrid
@@ -193,6 +203,7 @@ export function CalendarView() {
         weekStartsMonday={settings.weekStartsMonday}
         onOpenItem={openItem}
         onOpenDay={(iso) => setDayModal(iso)}
+        hideTypeTag={hideTypeTag}
       />
     );
   }
@@ -249,6 +260,27 @@ export function CalendarView() {
             traktConnected={traktConnected}
             simklConnected={simklConnected}
           />
+          {source === "anime" && (
+            <div className="flex items-center gap-1 rounded-full border border-edge-soft bg-elevated/30 p-1">
+              {(["sub", "dub"] as const).map((mode) => {
+                const active = animeDub === (mode === "dub");
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => setAnimeDub(mode === "dub")}
+                    aria-pressed={active}
+                    className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                      active
+                        ? "bg-ink text-canvas"
+                        : "text-ink-muted hover:bg-raised/60 hover:text-ink"
+                    }`}
+                  >
+                    {t(mode === "sub" ? "Sub" : "Dub")}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <button
             onClick={() => update({ weekStartsMonday: !settings.weekStartsMonday })}
             className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
@@ -397,6 +429,7 @@ export function CalendarView() {
             setDayModal(null);
             openItem(it);
           }}
+          hideTypeTag={hideTypeTag}
         />
       )}
 

@@ -11,11 +11,13 @@ export function DayModal({
   items,
   onClose,
   onOpenItem,
+  hideTypeTag,
 }: {
   dateISO: string;
   items: CalendarItem[];
   onClose: () => void;
   onOpenItem: (item: CalendarItem) => void;
+  hideTypeTag: boolean;
 }) {
   const t = useT();
   useEffect(() => {
@@ -59,7 +61,7 @@ export function DayModal({
         </header>
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
           {items.map((item) => (
-            <DayModalRow key={item.id} item={item} onOpen={onOpenItem} />
+            <DayModalRow key={item.id} item={item} onOpen={onOpenItem} hideTypeTag={hideTypeTag} />
           ))}
         </div>
       </div>
@@ -70,9 +72,11 @@ export function DayModal({
 function DayModalRow({
   item,
   onOpen,
+  hideTypeTag,
 }: {
   item: CalendarItem;
   onOpen: (item: CalendarItem) => void;
+  hideTypeTag: boolean;
 }) {
   const t = useT();
   const { settings } = useSettings();
@@ -106,11 +110,13 @@ function DayModalRow({
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span
-            className={`shrink-0 rounded px-1.5 py-px text-[9.5px] font-bold uppercase tracking-[0.12em] ${tagClass}`}
-          >
-            {tag}
-          </span>
+          {!hideTypeTag && (
+            <span
+              className={`shrink-0 rounded px-1.5 py-px text-[9.5px] font-bold uppercase tracking-[0.12em] ${tagClass}`}
+            >
+              {tag}
+            </span>
+          )}
           {item.voteAverage > 0 && (
             <span className="text-[11px] text-ink-muted">
               <span className="text-amber-300">★</span> {item.voteAverage.toFixed(1)}

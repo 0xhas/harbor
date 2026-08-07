@@ -11,6 +11,7 @@ import { fetchWatchlist as fetchSimklWatchlist, fetchWatchingItems } from "./sim
 import { fetchSimklCdnCalendar } from "./simkl/calendar";
 import { isAuthenticated as simklConnected } from "./simkl/session";
 import { fetchAniListAiringCalendar as fetchAniListAiring } from "./anilist/airing";
+import { fetchDubSchedule } from "./providers/anime-dub-sub";
 
 export { fetchLibraryCalendar } from "./calendar-library";
 
@@ -83,6 +84,61 @@ export async function fetchAniListAiringCalendar(
 ): Promise<CalendarItem[]> {
   const cacheKey = `anilist-airing:${year}-${month}`;
   return withCalendarCache(cacheKey, () => fetchAniListAiring(year, month).catch(() => []));
+}
+
+export async function fetchAnimeDubCalendar(
+  year: number,
+  month: number,
+): Promise<CalendarItem[]> {
+  const cacheKey = `anime-dub:${year}-${month}`;
+  return withCalendarCache(cacheKey, () => mapDubFeedToCalendar(year, month).catch(() => []));
+}
+
+async function mapDubFeedToCalendar(year: number, month: number): Promise<CalendarItem[]> {
+  const entries = await fetchDubSchedule();
+  const out: CalendarItem[] = [];
+  const seen = new Set<string>();
+  for (const e of entries) {
+    const media = e?.media?.media;
+    if (!media) continue;
+    if (media.isAdult) continue;
+    if (media.format === "MOVIE" || e.episodeNumber == null) continue;
+    const dateISO = e.episodeDate ? toLocalISO(e.episodeDate) : "";
+    if (!inMonth(dateISO, year, month)) continue;
+    const title =
+      media.title?.english?.trim() ||
+      media.title?.romaji?.trim() ||
+      e.english?.trim() ||
+      e.romaji?.trim() ||
+      "Untitled";
+    const baseId = media.idMal != null ? `mal:${media.idMal}` : `anilist:${media.id}`;
+    const id = `${baseId}:1:${e.episodeNumber}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      id,
+      imdbId: null,
+      type: "tv",
+      name: `${title} S1E${pad(e.episodeNumber)}`,
+      poster: media.coverImage?.extraLarge ?? media.coverImage?.medium ?? null,
+      background: media.bannerImage ?? null,
+      releaseDate: dateISO,
+      isAnime: true,
+      overview: "",
+      voteAverage: 0,
+    });
+  }
+  out.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
+  return out;
+}
+
+function toLocalISO(isoDateTime: string): string {
+  const d = new Date(isoDateTime);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  return `${y}-${m}-${day}`;
 }
 
 export async function fetchSimklCalendar(

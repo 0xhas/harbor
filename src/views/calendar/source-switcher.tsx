@@ -61,9 +61,9 @@ const OPTIONS: Option[] = [
   },
   {
     id: "anime",
-    label: "Anime airing",
+    label: "Anime",
     icon: () => <Sparkles size={13} strokeWidth={2.2} />,
-    hint: "Anime episodes airing this month, from AniList",
+    hint: "Anime episodes airing this month, sub or dub",
   },
   {
     id: "custom",

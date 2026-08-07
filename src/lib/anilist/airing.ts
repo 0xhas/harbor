@@ -19,6 +19,9 @@ const AIRING_QUERY = `query ($start: Int, $end: Int, $page: Int) {
         description
       }
     }
+    pageInfo {
+      hasNextPage
+    }
   }
 }`;
 
@@ -41,9 +44,17 @@ type AiringNode = {
   media: AiringMedia | null;
 };
 
-type AiringResponse = { Page: { airingSchedules: AiringNode[] | null } | null };
+type AiringResponse = {
+  Page: {
+    airingSchedules: AiringNode[] | null;
+    pageInfo: { hasNextPage: boolean } | null;
+  } | null;
+};
 
 const MAX_PAGES = 10;
+// Fetches up to this many pages in parallel, then waits for the batch.
+// AniList throttles hard on bursts, so this must stay small.
+const CONCURRENCY = 3;
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -71,21 +82,50 @@ export async function fetchAniListAiringCalendar(
 ): Promise<CalendarItem[]> {
   const start = Math.floor(new Date(year, month, 1).getTime() / 1000);
   const end = Math.floor(new Date(year, month + 1, 1).getTime() / 1000);
-  const out: CalendarItem[] = [];
-  const seen = new Set<string>();
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    let data: AiringResponse | null = null;
-    try {
-      data = await anilistRequest<AiringResponse>(
+
+  const pages = new Map<number, readonly AiringNode[]>();
+  let next = 1;
+  let pastLast = false;
+  let inflight = 0;
+  let resolveDone: () => void = () => {};
+  const done = new Promise<void>((r) => {
+    resolveDone = r;
+  });
+
+  const pump = () => {
+    while (!pastLast && next <= MAX_PAGES && inflight < CONCURRENCY) {
+      const page = next++;
+      inflight++;
+      anilistRequest<AiringResponse>(
         AIRING_QUERY,
         { start, end, page },
         undefined,
         true,
-      );
-    } catch {
-      break;
+      )
+        .then((data) => {
+          const nodes = data?.Page?.airingSchedules ?? [];
+          pages.set(page, nodes);
+          const hasNext = data?.Page?.pageInfo?.hasNextPage ?? nodes.length >= 50;
+          if (!hasNext) pastLast = true;
+        })
+        .catch(() => {
+          pastLast = true;
+        })
+        .finally(() => {
+          inflight--;
+          pump();
+          if (inflight === 0) resolveDone();
+        });
     }
-    const nodes = data?.Page?.airingSchedules ?? [];
+  };
+  pump();
+  await done;
+
+  const out: CalendarItem[] = [];
+  const seen = new Set<string>();
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const nodes = pages.get(page);
+    if (!nodes) break;
     for (const node of nodes) {
       const media = node.media;
       if (!media) continue;
@@ -109,7 +149,6 @@ export async function fetchAniListAiringCalendar(
         voteAverage: media.averageScore != null ? media.averageScore / 10 : 0,
       });
     }
-    if (nodes.length < 50) break;
   }
   out.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
   return out;

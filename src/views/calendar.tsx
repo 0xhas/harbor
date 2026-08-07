@@ -123,7 +123,10 @@ export function CalendarView() {
     const hideAnime = (list: CalendarItem[]) =>
       settings.hideContent.anime ? list.filter((i) => !i.isAnime) : list;
     if (source !== "all" && source !== "simkl-anticipated") return hideAnime(items);
-    let out = hideAnime(applyCalendarFilter(items, filter));
+    // All upcoming is exclusively movies and TV — anime lives in the dedicated Anime source.
+    const f: CalendarFilter = source === "all" && filter === "anime" ? "all" : filter;
+    let out = hideAnime(applyCalendarFilter(items, f));
+    if (source === "all") out = out.filter((i) => !i.isAnime);
     if (source === "all" && watchlistOnly) {
       out = out.filter((i) => {
         const t = i.type === "tv" ? "tv" : "movie";
@@ -174,7 +177,9 @@ export function CalendarView() {
   const showPremiereFilters = source === "simkl-anticipated";
   const hideTypeTag = source === "anime";
   const filtersActiveCount = buildActiveCount(settings.customCalendar);
-  const filters = settings.hideContent.anime ? FILTERS.filter((f) => f.id !== "anime") : FILTERS;
+  const filters = settings.hideContent.anime || source === "all"
+    ? FILTERS.filter((f) => f.id !== "anime")
+    : FILTERS;
 
   let body: React.ReactNode;
   if (source === "library" && !authKey) {

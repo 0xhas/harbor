@@ -10,6 +10,7 @@ import { resolveSavedCalendar, type SavedCandidate } from "./calendar-library";
 import { fetchWatchlist as fetchSimklWatchlist, fetchWatchingItems } from "./simkl/watchlist";
 import { fetchSimklCdnCalendar } from "./simkl/calendar";
 import { isAuthenticated as simklConnected } from "./simkl/session";
+import { fetchAniListAiringCalendar as fetchAniListAiring } from "./anilist/airing";
 
 export { fetchLibraryCalendar } from "./calendar-library";
 
@@ -74,6 +75,14 @@ export async function fetchSimklPremieresCalendar(
 ): Promise<CalendarItem[]> {
   const cacheKey = `simkl-premieres:${year}-${month}`;
   return withCalendarCache(cacheKey, () => fetchSimklCdnCalendar(year, month).catch(() => []));
+}
+
+export async function fetchAniListAiringCalendar(
+  year: number,
+  month: number,
+): Promise<CalendarItem[]> {
+  const cacheKey = `anilist-airing:${year}-${month}`;
+  return withCalendarCache(cacheKey, () => fetchAniListAiring(year, month).catch(() => []));
 }
 
 export async function fetchSimklCalendar(

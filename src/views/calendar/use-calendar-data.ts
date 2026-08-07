@@ -7,6 +7,7 @@ import {
 } from "@/lib/calendar";
 import {
   fetchAnticipatedCalendar,
+  fetchAniListAiringCalendar,
   fetchLibraryCalendar,
   fetchSimklCalendar,
   fetchSimklPremieresCalendar,
@@ -86,6 +87,9 @@ export function useCalendarData({
       }
       if (source === "simkl-anticipated") {
         return run(fetchSimklPremieresCalendar(year, month));
+      }
+      if (source === "anime") {
+        return run(fetchAniListAiringCalendar(year, month));
       }
       if (source === "anticipated") {
         return run(fetchAnticipatedCalendar(year, month));

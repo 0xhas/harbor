@@ -83,7 +83,9 @@ export function EmptyState({
             ? t("Nothing on Simkl this month")
             : source === "simkl-anticipated"
               ? t("No Simkl premieres this month")
-              : t("Nothing this month");
+              : source === "anime"
+                ? t("Nothing airing this month")
+                : t("Nothing this month");
   const filterKind =
     filter === "movie" ? t("movies") : filter === "tv" ? t("TV") : t("anime");
   const body =
@@ -107,7 +109,11 @@ export function EmptyState({
               ? t(
                   "Simkl lists no new shows or anime premiering this month. Try a different month.",
                 )
-              : watchlistOnly
+              : source === "anime"
+                ? t(
+                    "AniList has no anime episodes scheduled to air this month. Try a different month.",
+                  )
+                : watchlistOnly
             ? t(
                 "Nothing from your library lands this month. Toggle Watchlist off to see all releases.",
               )

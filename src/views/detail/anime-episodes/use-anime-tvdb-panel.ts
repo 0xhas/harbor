@@ -11,6 +11,7 @@ import {
   type TvdbSeasonTypeOption,
 } from "@/lib/providers/tvdb";
 import { tmdbLanguageIso } from "@/lib/providers/tmdb/tmdb-client";
+import { isUsableLocalizedText } from "@/lib/providers/anime-episode-build";
 import { fetchTvdbOrderBySeriesId, seasonDateRange, type TvdbOrder } from "@/lib/providers/tvdb-order";
 import type { PickerItem } from "../series-episodes/season-arc-picker";
 
@@ -120,11 +121,24 @@ export function useAnimeTvdbPanel(
 
   const built = useMemo(() => {
     if (!ordering) return null;
+    const lang = tmdbLanguageIso();
     const pool = franchiseEpisodes ?? episodes;
     const franchiseWide = franchiseEpisodes != null;
     const byPair = new Map<string, KitsuEpisode>();
     const byAbs = new Map<number, KitsuEpisode>();
     const byTvdbId = new Map<number, KitsuEpisode>();
+    const currentByPair = new Map<string, KitsuEpisode>();
+    const currentByAbs = new Map<number, KitsuEpisode>();
+    const currentByTvdbId = new Map<number, KitsuEpisode>();
+    for (const ep of episodes) {
+      const abs = ep.absoluteNumber ?? ep.number;
+      if (abs != null && !currentByAbs.has(abs)) currentByAbs.set(abs, ep);
+      if (ep.tvdbEpisodeId != null && !currentByTvdbId.has(ep.tvdbEpisodeId)) currentByTvdbId.set(ep.tvdbEpisodeId, ep);
+      if (ep.imdbSeason != null && ep.imdbSeason >= 1 && ep.imdbEpisode != null) {
+        const key = `${ep.imdbSeason}:${ep.imdbEpisode}`;
+        if (!currentByPair.has(key)) currentByPair.set(key, ep);
+      }
+    }
     for (const ep of pool) {
       const abs = franchiseWide ? ep.absoluteNumber : ep.absoluteNumber ?? ep.number;
       if (abs != null && !byAbs.has(abs)) byAbs.set(abs, ep);
@@ -148,6 +162,15 @@ export function useAnimeTvdbPanel(
         const img = e.stillPath ?? (abs != null ? ordering.imageByAbs.get(abs) : undefined);
         let match = byTvdbId.get(e.id) ?? byPair.get(`${e.seasonNumber}:${e.episodeNumber}`);
         if (!match && abs != null) match = byAbs.get(abs);
+        const currentMatch =
+          currentByTvdbId.get(e.id) ??
+          currentByPair.get(`${e.seasonNumber}:${e.episodeNumber}`) ??
+          (abs != null ? currentByAbs.get(abs) : undefined);
+        if (match && currentMatch && match !== currentMatch) {
+          const titleUsable = isUsableLocalizedText(match.title, lang);
+          const synopsisUsable = !match.synopsis || isUsableLocalizedText(match.synopsis, lang);
+          if (!titleUsable || !synopsisUsable) match = currentMatch;
+        }
         if (match && claimed.has(match.id)) match = undefined;
         const ep: KitsuEpisode = match
           ? !match.thumbnail && img
@@ -157,8 +180,8 @@ export function useAnimeTvdbPanel(
               id: -e.id,
               number: e.episodeNumber,
               seasonNumber: e.seasonNumber,
-              title: e.name || `Episode ${e.episodeNumber}`,
-              synopsis: e.overview ?? "",
+              title: isUsableLocalizedText(e.name, lang) ? e.name || `Episode ${e.episodeNumber}` : currentMatch?.title ?? `Episode ${e.episodeNumber}`,
+              synopsis: isUsableLocalizedText(e.overview, lang) ? e.overview ?? "" : currentMatch?.synopsis ?? "",
               thumbnail: img ?? null,
               airdate: e.airDate ?? null,
               length: e.runtime ?? null,

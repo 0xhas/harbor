@@ -157,7 +157,7 @@ export function mergeAniZipEpisodes(
       const r = Number(az.rating);
       if (Number.isFinite(r) && r > 0) ep.rating = r;
     }
-    if (az.seasonNumber != null && az.seasonNumber > 0 && az.episodeNumber != null) {
+    if (az.seasonNumber != null && az.seasonNumber >= 0 && az.episodeNumber != null) {
       if (azImdb) ep.imdbId = azImdb;
       if (ep.imdbSeason == null) ep.imdbSeason = az.seasonNumber;
       if (ep.imdbEpisode == null) ep.imdbEpisode = az.episodeNumber;

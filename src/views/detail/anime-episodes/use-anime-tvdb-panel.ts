@@ -12,7 +12,7 @@ import {
   type TvdbSeasonTypeOption,
 } from "@/lib/providers/tvdb";
 import { tmdbLanguageIso } from "@/lib/providers/tmdb/tmdb-client";
-import { isUsableLocalizedText } from "@/lib/providers/anime-episode-build";
+import { pickLocalizedText } from "@/lib/localized-text";
 import { fetchTvdbOrderBySeriesId, seasonDateRange, type TvdbOrder } from "@/lib/providers/tvdb-order";
 import type { PickerItem } from "../series-episodes/season-arc-picker";
 
@@ -189,10 +189,17 @@ export function useAnimeTvdbPanel(
           currentByTvdbId.get(e.id) ??
           currentByPair.get(`${e.seasonNumber}:${e.episodeNumber}`) ??
           (abs != null ? currentByAbs.get(abs) : undefined);
+        let title: string | undefined;
+        let synopsis: string | undefined;
         if (match && currentMatch && match !== currentMatch) {
-          const titleUsable = isUsableLocalizedText(match.title, lang);
-          const synopsisUsable = !match.synopsis || isUsableLocalizedText(match.synopsis, lang);
-          if (!titleUsable || !synopsisUsable) match = currentMatch;
+          title = pickLocalizedText(
+            [{ text: match?.title }, { text: currentMatch?.title }],
+            { forName: true, lang },
+          );
+          synopsis = pickLocalizedText(
+            [{ text: match?.synopsis }, { text: currentMatch?.synopsis }],
+            { lang },
+          );
         }
         if (match && claimed.has(match.id)) match = undefined;
 
@@ -220,15 +227,24 @@ export function useAnimeTvdbPanel(
 
 
         const ep: KitsuEpisode = match
-          ? !match.thumbnail && img
-            ? { ...match, thumbnail: img }
-            : match
+          ? {
+              ...match,
+              thumbnail: !match.thumbnail && img ? img : match.thumbnail,
+              ...(title != null ? { title } : {}),
+              ...(synopsis != null ? { synopsis } : {}),
+            }
           : {
               id: -e.id,
               number: e.episodeNumber,
               seasonNumber: e.seasonNumber,
-              title: isUsableLocalizedText(e.name, lang) ? e.name || `Episode ${e.episodeNumber}` : currentMatch?.title ?? `Episode ${e.episodeNumber}`,
-              synopsis: isUsableLocalizedText(e.overview, lang) ? e.overview ?? "" : currentMatch?.synopsis ?? "",
+              title: pickLocalizedText(
+                [{ text: e.name }, { text: e.nameEn ?? "" }, { text: currentMatch?.title ?? "" }],
+                { forName: true, lang },
+              ) ?? e.name,
+              synopsis: pickLocalizedText(
+                [{ text: e.overview }, { text: e.overviewEn ?? "" }, { text: currentMatch?.synopsis ?? "" }],
+                { lang },
+              ) ?? e.overview,
               thumbnail: img ?? null,
               airdate: e.airDate ?? null,
               length: e.runtime ?? null,

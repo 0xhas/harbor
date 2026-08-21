@@ -1,11 +1,18 @@
 import { Bookmark, Brush, Download, Loader2, Star, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Poster } from "@/components/poster";
 import { useT } from "@/lib/i18n";
 import { emitListToast } from "@/components/lists/list-toast";
 import { clearShowcase, seedShowcaseMetaId, setThemeShowcase } from "@/lib/social/showcase";
 import { myThemes, type StoreTheme } from "@/lib/theme-store";
 import type { ProfileSummary, ShowcaseItem } from "./profile-types";
+import { downloadTheme } from "@/lib/theme-store";
+import { getCustomThemes } from "@/lib/custom-themes";
+import { getThemeById } from "@/lib/theme";
+import { useSettings } from "@/lib/settings";
+import { nextBackgroundImage } from "@/lib/theme-background";
+import type { ActiveThemeId } from "@/lib/theme";
+import { getDownloadRecords } from "@/lib/theme-updates";
 
 const KIND_LABEL: Record<ShowcaseItem["kind"], string> = {
   favorite: "All-time favorite",
@@ -31,7 +38,7 @@ function ThemeCard({ item }: { item: ShowcaseItem }) {
           <img src={item.posterUrl} alt="" draggable={false} className="h-full w-full object-cover" />
         )}
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="text-[11px] uppercase tracking-[0.1em] text-accent">{KIND_LABEL.theme}</div>
         <div className="mt-1 truncate font-display text-[19px] text-ink">{item.title}</div>
         {item.caption && <div className="mt-1 line-clamp-2 text-[13px] text-ink-muted">{item.caption}</div>}
@@ -46,7 +53,87 @@ function ThemeCard({ item }: { item: ShowcaseItem }) {
           )}
         </div>
       </div>
+      {item.themeId && (
+        <div className="flex shrink-0 items-center">
+          <InstallThemeButton themeId={item.themeId} posterUrl={item.posterUrl} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function InstallThemeButton({ themeId, posterUrl }: { themeId: string; posterUrl?: string }) {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const [busy, setBusy] = useState(false);
+  const [justApplied, setJustApplied] = useState(false);
+
+  const records = getDownloadRecords();
+  const localEntry = Object.entries(records).find(
+    ([, rec]) => rec.storeId === themeId,
+  );
+  const localId = localEntry?.[0];
+  const installed = !!localId;
+  const applied =
+    justApplied ||
+    (installed && Object.entries(records).some(
+      ([id, rec]) => rec.storeId === themeId && settings.theme.preset === id,
+    ));
+
+  const handleClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      let saved = localId ? getCustomThemes().find((th) => th.id === localId) : undefined;
+      if (!saved) {
+        saved = await downloadTheme(themeId, posterUrl ?? null);
+      }
+      const next = getThemeById(saved.id);
+      const activeTheme =
+        settings.theme.preset === "custom" ? null : getThemeById(settings.theme.preset);
+      update({
+        theme: {
+          ...settings.theme,
+          preset: saved.id as ActiveThemeId,
+          backgroundImage: nextBackgroundImage(
+            settings.theme.backgroundImage,
+            activeTheme,
+            next,
+          ),
+          ...(next?.background
+            ? { backgroundDim: next.background.dim ?? settings.theme.backgroundDim }
+            : {}),
+        },
+      });
+      setJustApplied(true);
+      emitListToast(t("Theme applied!"));
+    } catch {
+      emitListToast(t("Could not install theme"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={applied || busy}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-[10px] px-4 text-[14px] font-semibold transition-colors disabled:opacity-70 ${
+        applied
+          ? "bg-surface text-ink ring-1 ring-edge"
+          : "bg-ink text-canvas hover:opacity-90"
+      } ${busy ? "opacity-70" : ""}`}
+    >
+      {busy && <Loader2 size={15} className="animate-spin" />}
+      {busy
+        ? t("Installing...")
+        : applied
+          ? t("Applied")
+          : installed
+            ? t("Apply theme")
+            : t("Install & apply")}
+    </button>
   );
 }
 
